@@ -1,0 +1,26 @@
+{
+    "name": "webbycrown/query-builder",
+    "license": "MIT",
+    "description" : "Query Builder for Laravel",
+    "authors": [
+        {
+            "name": "WebbyCrown Solutions",
+            "email": "info@webbycrown.com"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Webbycrown\\QueryBuilder\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Webbycrown\\QueryBuilder\\Providers\\QueryBuilderServiceProvider"
+            ],
+            "aliases": {}
+        }
+    },
+    "minimum-stability": "dev"
+}
