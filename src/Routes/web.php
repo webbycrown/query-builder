@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Programmer9WC\QueryBuilder\Http\Controllers\QueryBuilderController;
+use Webbycrown\QueryBuilder\Http\Controllers\QueryBuilderController;
 
 /**
  * Group routes under the 'web' middleware for session management, CSRF protection, etc.

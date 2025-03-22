@@ -12,7 +12,7 @@
                 <div class="card-header">
 
                     <div class="d-flex justify-content-between">
-                        <h2>{{ $query_form->title ?? 'View Query'}} Reports</h2>
+                        <h2>{{ $query_form->title ?? 'View Query'}}</h2>
                         <div>
                             <a href="{{ route( 'queries.index' ) }}" class="btn btn-secondary">Back</a>
                             <a href="{{ route( 'queries.edit', ['id' => ( (int)$query_form?->id ?? 0 )] ) }}" class="btn btn-primary">Edit</a>

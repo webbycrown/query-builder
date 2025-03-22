@@ -10,14 +10,19 @@ The primary goal of the **Query Builder Package** is to empower developers by pr
 ### Purpose of the Query Builder Package
 The **Laravel Query Builder Package** was created to provide developers with a streamlined and flexible way to generate dynamic reports. Instead of manually writing SQL queries, this package enables developers to construct queries using an intuitive interface, saving time and reducing errors. The goal is to enhance productivity by offering a user-friendly solution for building complex reports without requiring deep SQL expertise.
 
-### Add Query Screen
+## Add Query Screen
 ![Add Query Screen](https://github.com/user-attachments/assets/fff50c55-aee3-496d-8493-6afbd9a927de)
 
-### Query List Screen
+## Query List Screen
 ![Query List Screen](https://github.com/user-attachments/assets/9933c532-bfde-446f-8ae4-4dc30e714fde)
 
-### View Query Screen
-![View Query Screen](https://github.com/user-attachments/assets/880f4044-7c34-4b44-8344-88f1119b917a)
+## View Query Screen
+![View Query Screen](https://github.com/user-attachments/assets/44c95181-99ec-47d8-9dc7-1d9f26e79ddf)
+
+## Requirements
+
+* **PHP**: 8.0 or higher.
+* **Laravel**: v10.0.* or higher.
 
 ## Features
 - Select main table for querying
@@ -97,6 +102,9 @@ The Query Builder Package is continuously evolving to provide more flexibility a
 
 ### Contributor Suggestions
 We welcome community contributions! If you have ideas for new features or improvements, feel free to submit a pull request or open an issue on our repository.The Query Builder Package is continuously evolving to provide more flexibility and ease of use. Here are some planned features for future updates:
+
+## Changelog  
+For detailed changes, updates, and version history, check out the [CHANGELOG](https://github.com/webbycrown/query-builder/blob/main/CHANGELOG.md). 
 
 ## License
 This package is open-source and licensed under the MIT License.
