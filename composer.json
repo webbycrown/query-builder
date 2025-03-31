@@ -8,7 +8,10 @@
             "email": "info@webbycrown.com"
         }
     ],
-    "require": {},
+    "require": {
+        "maatwebsite/excel": "^3.1",
+        "barryvdh/laravel-dompdf": "^2.0"
+    },
     "autoload": {
         "psr-4": {
             "Webbycrown\\QueryBuilder\\": "src/"

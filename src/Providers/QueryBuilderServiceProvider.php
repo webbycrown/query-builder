@@ -30,6 +30,10 @@ class QueryBuilderServiceProvider extends ServiceProvider
         // Load views from the package's Resources/views directory and assign a namespace.
         $this->loadViewsFrom(__DIR__ . '/../Resources/views', 'wc_querybuilder');
 
+        $this->publishes([
+            __DIR__.'/../Config/querybuilder.php' => config_path('querybuilder.php'),
+        ], 'querybuilder');
+
         // Include a helpers file containing custom utility functions.
         require_once __DIR__ . '/../Helpers/helpers.php';
 
@@ -46,6 +50,9 @@ class QueryBuilderServiceProvider extends ServiceProvider
     public function register()
     {
         // This function is left empty, but can be used to register bindings.
+        // $this->mergeConfigFrom(
+        //     dirname(__DIR__) . '/Config/querybuilder.php', 'querybuilder'
+        // );
     }
     
 

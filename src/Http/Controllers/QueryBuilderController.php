@@ -10,6 +10,13 @@ use Illuminate\Routing\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
+use Webbycrown\QueryBuilder\Services\ExportService;
+
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class QueryBuilderController extends Controller
 {
@@ -205,17 +212,31 @@ class QueryBuilderController extends Controller
      */
     public function getDataByQueryDetails(Request $request)
     {
+        // dd($request);
         // Retrieve request parameters
+
         $mainTable = $request->input('main_table');
+
         $joins = $request->input('joins', []);
         $selectedColumns = $request->input('columns', []);
         $conditions = $request->input('conditions', []);
         $groupByColumns = $request->input('groupby', []);
+        $havingColumns = $request->input('having', []);
+        $orderByColumns = $request->input('orderby', []);
+        $limit = $request->input('limit', 0);
+        $offset = $request->input('offset', 0);
         $filters = $request->input('filter', []);
+        $format = $request->format;
+        if( request()->route()?->getName() == 'api.queries.search'){
+            $format = '';
+        }
         $page = $request->input('page', 1);
-        $perPage = $request->input('size', 10);
+        $perPage = ($limit > 0) ? $limit : $request->input('size', 10);
         $skip = ( $page - 1 ) * $perPage;
 
+        if ($offset > 0) {
+            $skip = ($page > 1) ? ($skip + $offset) : $offset;
+        }
 
         try {
             // Initialize query builder
@@ -273,9 +294,8 @@ class QueryBuilderController extends Controller
                 $dataForGroup = applyAggregatesToQuery($query, $selectedColumns, $tableInfo, $groupByColumns);
 
                 $selectedColumns = $dataForGroup['selectedColumns'];
+                $selectedAlias = $dataForGroup['selectedAlias'];
                 $query = $dataForGroup['query'];
-                // dd($query->toSql());
-
     
             }else{
 
@@ -285,15 +305,67 @@ class QueryBuilderController extends Controller
                 }
             }
 
-            // Fetch column information
+            // Apply having
+            if (!empty($havingColumns)) {
+                $havingColumns = array_filter($havingColumns, function ($condition) {
+                    return !empty($condition['column']) && !empty($condition['operator']) && $condition['value'] !== '';
+                });
+                if( !empty($havingColumns) ){
+                    foreach ($havingColumns as $havingColumn) {
+                        if (isset($havingColumn['column']) && isset($havingColumn['operator']) && isset($havingColumn['value'])) {
+                            
+                            $columnName = $havingColumn['column'];
+                         // Default to column name
+                            $aliasKey = $columnName; 
+
+                            // Find the correct aliasKey (database alias, not label)
+                            if (isset($selectedAlias[$columnName]) && !empty($selectedAlias[$columnName])) {
+                                $aliasData = $selectedAlias[$columnName];
+
+                                // If multiple aliases exist, choose the first one
+                                if (is_array($aliasData) && isset($aliasData[0]['aliasKey'])) {
+                                    // Use aliasKey, not aliasLabel
+                                    $aliasKey = $aliasData[0]['aliasKey']; 
+                                }
+                            }
+
+                            // Apply HAVING using aliasKey (which matches the SQL alias)
+                            $query->having($aliasKey, $havingColumn['operator'], $havingColumn['value']);
+                        }
+                    }
+                }
+            }
+
+            // Apply groupBy
+            if (!empty($orderByColumns)) {
+                foreach ($orderByColumns as $orderByColumn) {
+                    $query->orderBy($orderByColumn['column'], $orderByColumn['order']);
+                }
+            }
+
+           // Fetch column information based on the selected table and columns
             $columns = get_columns_for_listing($mainTable, $tableInfo, $selectedColumns);
 
-            // Apply pagination
-            $total = $query->get()->count();
+            // Check if the requested format is one of the allowed export formats
+            if( in_array($format,['csv','xlsx','pdf','json']) ){
+                // Execute the query and retrieve the results
+                $results = $query->get();
+
+                // Return the data and column information in JSON format
+                return response()->json([
+                    'data' => $results,
+                    'columns' => $columns,
+                ]);
+            }
+
+            // Apply pagination logic
+            $total = $query->get()->count(); // Get total records before pagination
+            $total = (int)$total - (int)$offset; // Ensure total is not negative
 
             // Get paginated results
             $results = $query->skip($skip)->take($perPage)->get();
 
+            // Return paginated response
             return response()->json([
                 'data' => $results,
                 'last_page' => (int)ceil($total / $perPage),
@@ -311,6 +383,83 @@ class QueryBuilderController extends Controller
         }
 
     }
+
+
+    /**
+    * Export data in various formats (CSV, Excel, PDF, JSON).
+    *
+    * This function fetches query details based on the provided ID, retrieves the associated data, 
+    * and exports it in the requested format. It supports CSV, Excel (XLSX), PDF, and JSON formats.
+    *
+    * @param \Illuminate\Http\Request $request The request object containing export parameters.
+    * 
+    * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\JsonResponse
+    * Returns a downloadable file or JSON response in case of errors.
+    */
+    public function exportData(Request $request)
+    {
+        try{
+            // Retrieve data ID from request, default to 0 if not provided
+            $data_id = $request->get('id') ? $request->get('id') : 0;
+            $query_title = '';
+
+            // If a valid data ID is provided, fetch query details
+            if( $data_id != 0 ){
+                $query_form = DB::connection($this->conn_key)->table('query_forms')->where('id', $data_id)->first();
+                if ($query_form) {
+                    $query_title = $query_form->title;
+                    $query_details = json_decode($query_form->query_details, true);
+
+                    // Merge query details into the request object
+                    $request->merge($query_details);
+                }
+            }
+
+            // Get export format, default to CSV if not specified
+            $format = $request->get('format', 'csv');
+            $request->merge(['format' => $format]);
+
+            // Allowed export formats
+            $allowedFormats = ['csv', 'xlsx', 'pdf','json'];
+
+            // Validate the requested format
+            if (!in_array($format, $allowedFormats)) {
+                return response()->json(['error' => 'Invalid export format'], 200);
+            }
+
+            // Fetch data based on query details
+            $response = $this->getDataByQueryDetails($request);
+            $data = $response->getData(true); // Convert JSON response to array
+
+            // Validate if data is available for export
+            if (!isset($data['data']) || empty($data['data'])) {
+                return response()->json(['error' => 'No data available for export'], 400);
+            }
+
+            $results = $data['data'];
+            $columns = $data['columns'];
+
+            // Initialize export service
+            $exportService = new ExportService();
+            // Handle export based on format
+            switch ($format) {
+                case 'csv':
+                return $exportService->exportCSV($results, $columns, $query_title);
+                case 'xlsx':
+                return $exportService->exportExcel($results, $columns, $query_title);
+                case 'pdf':
+                return $exportService->exportPDF($results, $columns, $query_title);
+                case 'json':
+                return $exportService->exportJSON($results, $columns, $query_title);
+                default:
+                return response()->json(['error' => 'Unexpected error'], 200);
+            }
+        } catch (\Exception $e) {
+             // Handle any unexpected errors gracefully
+            return response()->json(['error' => 'Something went wrong', 'message' => $e->getMessage()], 200);
+        }
+    }
+
 
     /**
      * Save a query builder section based on the provided data.

@@ -56,11 +56,11 @@
                                             @if(is_array($tables_data) && array_key_exists($table, $tables_data) && !is_null($tables_data[$table]->table_comment) && !empty($tables_data[$table]->table_comment))
                                             <option value="{{ $table }}">
                                                 {{ getLabelMode() == 'Label' 
-                                                ? $tables_data[$table]->table_comment  
+                                                ? ($tables_data[$table]?->table_comment ?? $table)  
                                                 : (getLabelMode() == 'Key' 
                                                     ? $table 
                                                     : (getLabelMode() == 'Both' 
-                                                        ? $tables_data[$table]->table_comment . ' (' . $table . ')' 
+                                                        ? ( $tables_data[$table]->table_comment ? $tables_data[$table]->table_comment . ' (' . $table . ')'  : $table )
                                                         : $table
                                                     )
                                                 ) 
@@ -129,7 +129,6 @@
                                             <button type="button" class="btn btn-secondary btn-sm" id="addCondition">Add Condition</button>
                                         </div>
 
-
                                         <div class="mb-3">
                                             <label>Group By:</label>
                                             <div id="groupby-container">
@@ -142,11 +141,27 @@
                                                             </select>
                                                             <span class="warning-message text-danger" style="display: none;"></span>
                                                         </div>
+                                                        @php
+                                                        $apply_aggregate = applySqlFunctions();
+                                                        @endphp
                                                         <div class="col-md-4">
                                                             <select class="form-select groupby-aggregation" name="groupby[0][aggregation]">
                                                                 <option value=""></option>
-                                                                <option value="SUM">SUM</option>
-                                                                <option value="GROUP_CONCAT">GROUP_CONCAT</option>
+                                                                @if(!empty($apply_aggregate['Functions']))
+                                                                <optgroup label="Functions">
+                                                                    @foreach($apply_aggregate['Functions'] as $function)
+                                                                    <option value="{{ $function['value'] }}">{{ $function['key'] }}</option>
+                                                                    @endforeach
+                                                                </optgroup>
+                                                                @endif
+
+                                                                @if(!empty($apply_aggregate['Aggregation']))
+                                                                <optgroup label="Aggregation">
+                                                                    @foreach($apply_aggregate['Aggregation'] as $aggregate)
+                                                                    <option value="{{ $aggregate['value'] }}">{{ $aggregate['key'] }}</option>
+                                                                    @endforeach
+                                                                </optgroup>
+                                                                @endif
                                                             </select>
                                                         </div>
                                                         <div class="col-md-4">
@@ -157,6 +172,65 @@
                                                 </div>
                                             </div>
                                             <button type="button" class="btn btn-secondary btn-sm" id="addGroupBy">Add Group By</button>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label>Having:</label>
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <select class="form-select having-column" name="having[0][column]">
+                                                        <option value="">Select Column</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <select class="form-select having-operator" name="having[0][operator]">
+                                                        <option value="=">=</option>
+                                                        <option value="<"><</option>
+                                                        <option value=">">></option>
+                                                        <option value="<="><=</option>
+                                                        <option value=">=">>=</option>
+                                                        <option value="!=">!=</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <input type="text" class="form-control having-value" name="having[0][value]" placeholder="Value">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label>Order By:</label>
+                                            <div id="orderby-container">
+                                                <div class="orderby-card mb-2">
+                                                    <span class="remove-orderby" style="font-size: 25px;">&times;</span>
+                                                    <div class="row">
+                                                        <div class="col-md-4">
+                                                            <select class="form-select orderby-column" name="orderby[0][column]">
+                                                                <option value="">Select Column</option>
+                                                            </select>
+                                                            <span class="warning-message text-danger" style="display: none;"></span>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <select class="form-select orderby-order" name="orderby[0][order]">
+                                                                <option value="ASC">ASC</option>
+                                                                <option value="DESC">DESC</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn btn-secondary btn-sm" id="addOrderBy">Add Order By</button>
+                                        </div>
+
+                                        <div class="mb-3 row">
+                                            <div class="col-md-4">
+                                                <label>Limit:</label>
+                                                <input type="number" class="form-control query-limit" name="limit" min="0" value="{{ (array_key_exists('limit', $query_details) && $query_details['limit'] > 0) ? $query_details['limit'] : 0 }}">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label>Offset:</label>
+                                                <input type="number" class="form-control query-offset" name="offset" min="0" value="{{ (array_key_exists('offset', $query_details) && $query_details['offset'] > 0) ? $query_details['offset'] : 0 }}">
+                                            </div>
                                         </div>
 
 
