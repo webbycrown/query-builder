@@ -10,19 +10,14 @@ The primary goal of the **Query Builder Package** is to empower developers by pr
 ### Purpose of the Query Builder Package
 The **Laravel Query Builder Package** was created to provide developers with a streamlined and flexible way to generate dynamic reports. Instead of manually writing SQL queries, this package enables developers to construct queries using an intuitive interface, saving time and reducing errors. The goal is to enhance productivity by offering a user-friendly solution for building complex reports without requiring deep SQL expertise.
 
-## Add Query Screen
-![Add Query Screen](https://github.com/user-attachments/assets/fff50c55-aee3-496d-8493-6afbd9a927de)
+### Add Query Screen
+![Add Query Screen](https://github.com/user-attachments/assets/c5111ee8-8d8e-4a4f-aa98-da3e4e93b2ad)
 
-## Query List Screen
-![Query List Screen](https://github.com/user-attachments/assets/9933c532-bfde-446f-8ae4-4dc30e714fde)
+### Query List Screen
+![Query List Screen](https://github.com/user-attachments/assets/6fa913e9-acdc-4751-849a-e2c403eb37fd)
 
-## View Query Screen
-![View Query Screen](https://github.com/user-attachments/assets/44c95181-99ec-47d8-9dc7-1d9f26e79ddf)
-
-## Requirements
-
-* **PHP**: 8.0 or higher.
-* **Laravel**: v10.0.* or higher.
+### View Query Screen
+![View Query Screen](https://github.com/user-attachments/assets/a913b485-4ce6-4ec3-a000-eb03e8f0a108)
 
 ## Features
 - Select main table for querying
@@ -32,10 +27,21 @@ The **Laravel Query Builder Package** was created to provide developers with a s
 - Group results by columns with aggregation functions (SUM, GROUP_CONCAT, etc.)
 - Assign alias names for grouped data
 - Save, edit, delete, and execute queries dynamically
+- Support additional functions like AVG(), MIN(), MAX(), COUNT(), etc
+- Add advanced filtering options such as HAVING and BETWEE
+- Implement ORDER BY functionality to sort query results in ASC/DESC order
+- Limit & Offset – Allow users to control the number of rows retrieved in query results
+- Configure table and column visibility based on settings
 
 ## Installation
 ```bash
 composer require webbycrown/query-builder:dev-main
+```
+
+## Publish Configuration File
+Run the following command to publish the query builder configuration file:
+```bash
+php artisan vendor:publish --tag=config
 ```
 
 ## Run Migrations
@@ -72,8 +78,16 @@ You can access the query builder at:
 ```bash
 http://127.0.0.1:8000/queries
 ```
+### 2. Middleware and Route Prefix
+Modify config/querybuilder.php to set middleware and route prefix:
+```
+return [
+    'middleware' => ['web', 'auth'],   // Middleware for all QueryBuilder routes
+    'access_route' => 'queries',       // Prefix for web routes
+];
+```
 
-### 2. Create a Query
+### 3. Create a Query
 Navigate to **Add Query** page and configure:
 - **Main Table**: Select the table to query from.
 - **Joining Tables** (Optional): Define relationships.
@@ -81,30 +95,32 @@ Navigate to **Add Query** page and configure:
 - **Conditions**: Set WHERE clauses.
 - **Group By**: Apply GROUP BY with aggregation.
 - **Save Query**: Store query for future use.
+- **Custom Conditions** – Add advanced filtering options such as HAVING and BETWEEN.
+- **Grouping & Aggregations** – Support additional functions like AVG(), MIN(), MAX(), COUNT(), etc.
+- **Sorting & Ordering** – Implement ORDER BY functionality to sort query results in ASC/DESC order.
+- **Limit & Offset** – Allow users to control the number of rows retrieved in query results.
+- **Export Options** – Enable downloading reports in multiple formats, including CSV, Excel, PDF, and JSON.
 
-### 3. View Saved Queries
+### 4. View Saved Queries
 Saved queries can be accessed in the **Query Lists**.
 
-### 4. Edit or Delete Queries
+### 5. Edit or Delete Queries
 Modify or remove queries from the list.
 
-### 5. Run Queries
+### 6. Run Queries
 Click on a saved query to view the output in a table format.
 
 ## Upcoming Features
 The Query Builder Package is continuously evolving to provide more flexibility and ease of use. Here are some planned features for future updates:
 
-1. **Custom Conditions** – Add advanced filtering options such as HAVING and BETWEEN.
-2. **Grouping & Aggregations** – Support additional functions like AVG(), MIN(), MAX(), COUNT(), etc.
-3. **Sorting & Ordering** – Implement ORDER BY functionality to sort query results in ASC/DESC order.
-4. **Limit & Offset** – Allow users to control the number of rows retrieved in query results.
-5. **Export Options** – Enable downloading reports in multiple formats, including CSV, Excel, PDF, and JSON.
+1. **Complex condition building** – Support AND/OR logic for advanced queries.
+2. **Subquery Support** – Allow users to create nested queries within the main query.
+3. **Scheduling Reports** – Automate report generation and email delivery.
+4. **Audit Logs & Query Tracking** – Keep a history of all executed queries with timestamps and user details. 
+5. **Will Add 2 Screen (Variant)** – Introduced two new UI screens to enhance user experience and workflow.  
 
 ### Contributor Suggestions
 We welcome community contributions! If you have ideas for new features or improvements, feel free to submit a pull request or open an issue on our repository.The Query Builder Package is continuously evolving to provide more flexibility and ease of use. Here are some planned features for future updates:
-
-## Changelog  
-For detailed changes, updates, and version history, check out the [CHANGELOG](https://github.com/webbycrown/query-builder/blob/main/CHANGELOG.md). 
 
 ## License
 This package is open-source and licensed under the MIT License.

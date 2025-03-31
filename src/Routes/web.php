@@ -3,11 +3,15 @@
 use Illuminate\Support\Facades\Route;
 use Webbycrown\QueryBuilder\Http\Controllers\QueryBuilderController;
 
+
+$prefix = config('querybuilder.access_route', 'queries'); // Default to 'queries'
+$middleware = config('querybuilder.middleware', ['web', 'auth']);  // Default middleware
+
 /**
  * Group routes under the 'web' middleware for session management, CSRF protection, etc.
  * The 'auth' middleware ensures that only authenticated users can access these routes.
  */
-Route::middleware(['web', 'auth'])->group(function () {
+Route::middleware($middleware)->group(function () use ($prefix) { 
 
     /**
      * Query Builder Routes
@@ -15,7 +19,7 @@ Route::middleware(['web', 'auth'])->group(function () {
      * These routes provide a user interface for building and managing database queries.
      * They are prefixed with 'queries' to logically group related functionalities.
      */
-    Route::controller(QueryBuilderController::class)->prefix('queries')->group(function () {
+    Route::controller(QueryBuilderController::class)->prefix($prefix)->group(function () {
 
         /**
          * Display the list of saved queries.
@@ -49,7 +53,7 @@ Route::middleware(['web', 'auth'])->group(function () {
      * These routes handle API calls related to querying database information dynamically.
      * They are prefixed with 'api/queries' to clearly differentiate them from UI routes.
      */
-    Route::controller(QueryBuilderController::class)->prefix('api/queries')->group(function () {
+    Route::controller(QueryBuilderController::class)->prefix('api/'.$prefix)->group(function () {
 
         /**
          * Fetch the columns of a given database table.
@@ -69,6 +73,7 @@ Route::middleware(['web', 'auth'])->group(function () {
          * Perform a search operation based on query details.
          */
         Route::get('/search', 'getDataByQueryDetails')->name('api.queries.search');
+        Route::get('/export', 'exportData')->name('api.queries.export');
 
         /**
          * Save query details for future use.

@@ -18,7 +18,6 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.dataTables.css" />
 
     <!-- Import Tabulator CSS for advanced table handling -->
-    {{-- <link href="https://unpkg.com/tabulator-tables/dist/css/tabulator.min.css" rel="stylesheet"> --}}
     <link href="https://unpkg.com/tabulator-tables@6.3.1/dist/css/tabulator.min.css" rel="stylesheet">
 
     <!-- CSRF Token for security in AJAX requests -->
@@ -86,7 +85,6 @@
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.js"></script>
 
     <!-- Import Tabulator for table management -->
-    {{-- <script type="text/javascript" src="https://unpkg.com/tabulator-tables/dist/js/tabulator.min.js"></script> --}}
     <script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.3.1/dist/js/tabulator.min.js"></script>
 
     <!-- Import Sweetalert2 for showing some messages -->

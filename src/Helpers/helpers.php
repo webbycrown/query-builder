@@ -555,6 +555,11 @@ function generateSqlOperators($selectedOperator = '') {
             'value' => "IS NOT NULL",
             'notes' => "Find customers who have an email address."
         ], // Checks if a value is NOT NULL
+	    "BETWEEN" => [
+	        'key' => "BETWEEN",
+	        'value' => "BETWEEN",
+	        'notes' => "Find products priced between 50 and 100 (Enter values as: 50,100)."
+	    ], // Finds values within a range (inclusive)
         "SQL" => [
             'key' => "SQL",
             'value' => "SQL",
@@ -605,6 +610,14 @@ function generateWhereConditionForOperator( $query, $condition ){
             case 'NOT REGEXP':
                 $query->where($condition['column'], 'NOT REGEXP', $condition['value']);
                 break;
+                
+		    case 'BETWEEN':
+		        $values = explode(',', $condition['value']); // Convert "50,100" into ['50', '100']
+
+		        if (count($values) === 2) {
+		            $query->whereBetween($condition['column'], [$values[0], $values[1]]);
+		        }
+		        break;
 
             default:
                 $query->where($condition['column'], $condition['operator'], $condition['value']);
@@ -615,7 +628,7 @@ function generateWhereConditionForOperator( $query, $condition ){
 }
 
 function applyAggregatesToQuery($query, $selectedColumns, $tableInfo, $groupByColumns) {
-    $groupByFields = [];
+   $groupByRawFields =  $selectedAlias = $groupByFields = [];
 
     $selectedColumnsForSelect = (is_array($selectedColumns) && count($selectedColumns) > 0) ? $selectedColumns : array_flip($tableInfo);
 
@@ -636,22 +649,30 @@ function applyAggregatesToQuery($query, $selectedColumns, $tableInfo, $groupByCo
     			$aliaslabel = (!is_null($groupByColumn['alias']) && !empty($groupByColumn['alias'])) ? $groupByColumn['alias'] : $aliaslabel;
 
     			$isAggregationFlag = false;
-    			
-    			switch (strtoupper($groupByColumn['aggregation'])) {
-    				
-    				case 'SUM':
-	    				$selectedColumns[] = DB::raw("SUM({$groupByColumn['column']}) AS {$aliasKey}");
-	    				$isAggregationFlag = true;
-    				break;
 
-    				case 'GROUP_CONCAT':
-	    				$selectedColumns[] = DB::raw("GROUP_CONCAT({$groupByColumn['column']}) AS {$aliasKey}");
-	    				$isAggregationFlag = true;
-    				break;
+    			$aggregationType = strtoupper($groupByColumn['aggregation']);
+    			
+    			$aggregateFunctions = applySqlFunctions();
+
+    			if (isset($aggregateFunctions["Aggregation"][$aggregationType])) {
+    				if ($aggregationType === "COUNT DISTINCT") {
+				        // Special handling for COUNT DISTINCT
+    					$selectedColumns[] = DB::raw("COUNT(DISTINCT {$groupByColumn['column']}) AS {$aliasKey}");
+    				} else {
+    					$selectedColumns[] = DB::raw("{$aggregateFunctions["Aggregation"][$aggregationType]['value']}({$groupByColumn['column']}) AS {$aliasKey}");
+    				}
+    				$isAggregationFlag = true;
+    			}
+
+    			if (isset($aggregateFunctions["Functions"][$aggregationType])) {
+    				$selectedColumns[] = DB::raw("{$aggregateFunctions["Functions"][$aggregationType]['value']}({$groupByColumn['column']}) AS {$aliasKey}");
+    				$isAggregationFlag = true;
+    				$groupByRawFields[] = $groupByColumn['column'];
     			}
 
     			if ($isAggregationFlag) {
     				$selectedColumnsForSelect[$aliaslabel] = $aliasKey;
+
     				if( array_key_exists($groupByComment, $selectedColumns) ){
     					unset($selectedColumns[$groupByComment]);
     				}
@@ -659,7 +680,6 @@ function applyAggregatesToQuery($query, $selectedColumns, $tableInfo, $groupByCo
     					unset($selectedColumnsForSelect[$groupByComment]);
     				}
     			}
-
     		}else{
     			$aliaslabel = $isAlias ? $groupByColumn['alias'] : $groupByComment;
 
@@ -667,7 +687,12 @@ function applyAggregatesToQuery($query, $selectedColumns, $tableInfo, $groupByCo
 
     			$selectedColumns[] = $isAlias ? "{$groupByColumn['column']} AS {$aliasKey}" : $groupByColumn['column'];
 
-    			$groupByFields[] = $isAlias ? $aliasKey : $groupByColumn['column'];
+    			if (strpos($groupByColumn['column'], '(') !== false) { 
+                    // If the column contains a function like CHAR_LENGTH(), treat it as raw
+    				$groupByRawFields[] = $groupByColumn['column'];
+    			} else {
+    				$groupByFields[] = $isAlias ? $aliasKey : $groupByColumn['column'];
+    			}
 
 				if ($isAlias) {
     				if( array_key_exists($groupByComment, $selectedColumnsForSelect) ){
@@ -677,9 +702,13 @@ function applyAggregatesToQuery($query, $selectedColumns, $tableInfo, $groupByCo
 				}
     		}
 
-
+    		$selectedAlias[$groupByColumn['column']][] = [ 	
+    			'aliasKey' => $aliasKey,
+    			'aliaslabel' => $aliaslabel,
+    		];
     	}
     }
+
 
     if (!empty($selectedColumns)) {
     	$query->select($selectedColumns);
@@ -689,11 +718,19 @@ function applyAggregatesToQuery($query, $selectedColumns, $tableInfo, $groupByCo
     if (!empty($groupByFields)) {
         $query->groupBy($groupByFields); // Use spread operator for Laravel compatibility
     }
+
+      if (!empty($groupByRawFields)) {
+        foreach ($groupByRawFields as $rawField) {
+            $query->groupByRaw($rawField);
+        }
+    }
+
     $selectedColumns = $selectedColumnsForSelect;
-    
+
      return [
         'query' => $query,
-        'selectedColumns' => $selectedColumns
+        'selectedColumns' => $selectedColumns,
+        'selectedAlias' => $selectedAlias
     ];
 }
 
@@ -717,6 +754,132 @@ function getLabelMode() {
 
     // Convert the option to lowercase for consistency and capitalize the first letter
     return ucfirst(strtolower($env_option));
+}
+
+
+/**
+ * Returns an array of SQL aggregate functions with their respective keys and values.
+ *
+ * This function defines a list of commonly used SQL aggregate functions,
+ * such as SUM, GROUP_CONCAT, AVG, COUNT, MAX, and MIN. Each function is
+ * stored in an associative array with 'key' and 'value' pairs.
+ *
+ * @return array An associative array containing SQL aggregate functions.
+ */
+function applyAggregate() {
+    // Define an array of SQL aggregate functions
+    $aggregateFunctions = [
+        "SUM" => [
+            'key' => "SUM",
+            'value' => "SUM",
+        ],
+        "GROUP_CONCAT" => [
+            'key' => "GROUP_CONCAT",
+            'value' => "GROUP_CONCAT",
+        ],
+        "AVG" => [
+            'key' => "AVG",
+            'value' => "AVG",
+        ],
+        "COUNT" => [
+            'key' => "COUNT",
+            'value' => "COUNT",
+        ],
+        "MAX" => [
+            'key' => "MAX",
+            'value' => "MAX",
+        ],
+        "MIN" => [
+            'key' => "MIN",
+            'value' => "MIN",
+        ],
+    ];
+
+    // Return the array of aggregate functions
+    return $aggregateFunctions;
+}
+
+
+/**
+ * Returns an array of SQL functions and aggregation functions with their keys and values.
+ *
+ * @return array An associative array containing SQL functions and aggregation functions.
+ */
+function applySqlFunctions() {
+    return [
+        "Functions" => [
+            "CHAR_LENGTH" => [
+                'key' => "CHAR_LENGTH",
+                'value' => "CHAR_LENGTH",
+            ],
+            "DATE" => [
+                'key' => "DATE",
+                'value' => "DATE",
+            ],
+            "FROM_UNIXTIME" => [
+                'key' => "FROM_UNIXTIME",
+                'value' => "FROM_UNIXTIME",
+            ],
+            "LOWER" => [
+                'key' => "LOWER",
+                'value' => "LOWER",
+            ],
+            "ROUND" => [
+                'key' => "ROUND",
+                'value' => "ROUND",
+            ],
+            "FLOOR" => [
+                'key' => "FLOOR",
+                'value' => "FLOOR",
+            ],
+            "CEIL" => [
+                'key' => "CEIL",
+                'value' => "CEIL",
+            ],
+            "SEC_TO_TIME" => [
+                'key' => "SEC_TO_TIME",
+                'value' => "SEC_TO_TIME",
+            ],
+            "TIME_TO_SEC" => [
+                'key' => "TIME_TO_SEC",
+                'value' => "TIME_TO_SEC",
+            ],
+            "UPPER" => [
+                'key' => "UPPER",
+                'value' => "UPPER",
+            ],
+        ],
+        "Aggregation" => [
+            "AVG" => [
+                'key' => "AVG",
+                'value' => "AVG",
+            ],
+            "COUNT" => [
+                'key' => "COUNT",
+                'value' => "COUNT",
+            ],
+            "COUNT DISTINCT" => [
+                'key' => "COUNT DISTINCT",
+                'value' => "COUNT(DISTINCT ",
+            ],
+            "GROUP_CONCAT" => [
+                'key' => "GROUP_CONCAT",
+                'value' => "GROUP_CONCAT",
+            ],
+            "MAX" => [
+                'key' => "MAX",
+                'value' => "MAX",
+            ],
+            "MIN" => [
+                'key' => "MIN",
+                'value' => "MIN",
+            ],
+            "SUM" => [
+                'key' => "SUM",
+                'value' => "SUM",
+            ],
+        ]
+    ];
 }
 
 
