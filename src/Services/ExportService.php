@@ -40,9 +40,9 @@ class ExportService
         // Format data using column mapping
         $formattedData = array_map(fn($row) => 
             array_combine(
-                array_values($columnMapping), // Titles as keys
-                array_map(fn($field) => $row[$field] ?? '', array_keys($columnMapping)) // Map field values
-            ), 
+            array_values($columnMapping), // Titles as keys
+            array_map(fn($field) => $row[$field] ?? '', array_keys($columnMapping)) // Map field values
+        ), 
             $data
         );
 

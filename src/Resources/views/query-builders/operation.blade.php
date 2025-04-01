@@ -150,7 +150,7 @@
                                                                 @if(!empty($apply_aggregate['Functions']))
                                                                 <optgroup label="Functions">
                                                                     @foreach($apply_aggregate['Functions'] as $function)
-                                                                    <option value="{{ $function['value'] }}">{{ $function['key'] }}</option>
+                                                                    <option value="{{ $function['value'] }}" data-notes="{{ $function['notes'] }}">{{ $function['key'] }}</option>
                                                                     @endforeach
                                                                 </optgroup>
                                                                 @endif
@@ -158,7 +158,7 @@
                                                                 @if(!empty($apply_aggregate['Aggregation']))
                                                                 <optgroup label="Aggregation">
                                                                     @foreach($apply_aggregate['Aggregation'] as $aggregate)
-                                                                    <option value="{{ $aggregate['value'] }}">{{ $aggregate['key'] }}</option>
+                                                                    <option value="{{ $aggregate['value'] }}" data-notes="{{ $aggregate['notes'] }}">{{ $aggregate['key'] }}</option>
                                                                     @endforeach
                                                                 </optgroup>
                                                                 @endif
@@ -176,21 +176,26 @@
 
                                         <div class="mb-3">
                                             <label>Having:</label>
-                                            <div class="row">
+                                            <div class="row having">
                                                 <div class="col-md-4">
                                                     <select class="form-select having-column" name="having[0][column]">
                                                         <option value="">Select Column</option>
                                                     </select>
                                                 </div>
+
+                                                @php
+                                                    $having_operators = havingOperator();
+                                                @endphp
+                                                
                                                 <div class="col-md-4">
                                                     <select class="form-select having-operator" name="having[0][operator]">
-                                                        <option value="=">=</option>
-                                                        <option value="<"><</option>
-                                                        <option value=">">></option>
-                                                        <option value="<="><=</option>
-                                                        <option value=">=">>=</option>
-                                                        <option value="!=">!=</option>
+                                                        @if( isset($having_operators) && count($having_operators) > 0 )
+                                                            @foreach( $having_operators as $having_operator )
+                                                            <option value={{ $having_operator['value'] }} data-notes="{{ $having_operator['notes'] }}">{{ $having_operator['key'] }}</option>
+                                                            @endforeach
+                                                        @endif
                                                     </select>
+                                                    <p class="having-notes"></p>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input type="text" class="form-control having-value" name="having[0][value]" placeholder="Value">

@@ -73,6 +73,10 @@ Route::middleware($middleware)->group(function () use ($prefix) {
          * Perform a search operation based on query details.
          */
         Route::get('/search', 'getDataByQueryDetails')->name('api.queries.search');
+
+        /**
+         * Define a GET route that calls the exportData method.
+         */
         Route::get('/export', 'exportData')->name('api.queries.export');
 
         /**

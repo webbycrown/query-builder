@@ -155,73 +155,79 @@
          let formData = {}; 
          $(document).on('click', '.export_csv, .export_pdf, .export_xlsx', function (e) {
             e.preventDefault();
-            console.log($(this));
-            console.log($(this).attr('data-format'));
-            // Get format from button (csv, xlsx, pdf)
+            // Get export format (csv, xlsx, pdf) from button
             var format = $(this).attr('data-format'); 
             var id = $(this).attr('data-id'); 
+            // Assign format and ID to formData
             formData.format = format;
             formData.id = id;
+            // Send AJAX request to export data
             $.ajax({
                 url: "{{route('api.queries.export')}}",
                 type: 'GET',
                 data: formData,
                 xhrFields: {
-                    // Handle file response properly
+                    // Ensure binary response for file downloads
                     responseType: 'blob' 
                 },
                 success: function (response, status, xhr) {
 
-                    let filename = `export.${format}`;
+                    let filename = `export.${format}`; // Default filename
                     let disposition = xhr.getResponseHeader('Content-Disposition');
 
                     if (disposition && disposition.includes('attachment')) {
                     
                         // Try to match UTF-8 encoded filename first
-                        let matches = disposition.match(/filename\*?=UTF-8''([^;]+)/);
+                        let matches = disposition.match(/filename\*?=UTF-8''([^;]+)/); 
 
                         if (!matches || !matches[1]) {
-                            // Fallback for standard filename format (without UTF-8 encoding)
+                            // Fallback for standard filename format
                             matches = disposition.match(/filename="?([^"]+)"?/);
                         }
 
-                        console.log('Filename Matches:', matches); 
-
                         if (matches && matches[1]) {
-                            filename = decodeURIComponent(matches[1]);
+                            filename = decodeURIComponent(matches[1]); // Decode and set filename
                         }
                     }
 
+                    // Create a downloadable blob object
                     let blob = new Blob([response], { type: xhr.getResponseHeader('Content-Type') });
                     let link = document.createElement("a");
                     link.href = window.URL.createObjectURL(blob);
-                    link.download = filename;
+                    link.download = filename; // Set the filename
+                    // Append the link to the document, trigger the download, and remove the link
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
                 },
                 error: function (xhr) {
+                     // Handle error response and log an error message
                     let errorMsg = xhr.responseJSON ? xhr.responseJSON.error : "Download failed!";
                     console.log(errorMsg);
                 }
             });
         });
 
+         // Get export format json from button
         $(document).on('click', '.export_btn', function (e) {
-            e.preventDefault();
-            let format = $(this).data('format');
-             var id = $(this).attr('data-id'); 
+            e.preventDefault(); // Prevent default button behavior
+            let format = $(this).data('format'); // Get export format from button
+             var id = $(this).attr('data-id'); // Get the ID of the query to export
+
+             // Set the export format and ID in formData
             formData.format = 'json';
             formData.id = id;
+            // Send AJAX request to fetch the export data
             $.ajax({
                 url: "{{ route('api.queries.export') }}",
                 type: 'GET',
                 data: formData,
-                dataType: 'json', 
+                dataType: 'json',  // Expect JSON response
                 success: function (data,status, xhr) {
 
-                    let filename = "export.json"; 
+                    let filename = "export.json";  // Default filename
                     
+                    // Extract filename from Content-Disposition header if available
                     let disposition = xhr.getResponseHeader('Content-Disposition');
                     if (disposition && disposition.includes('attachment')) {
 
@@ -232,9 +238,6 @@
                             // Fallback for standard filename format (without UTF-8 encoding)
                             matches = disposition.match(/filename="?([^"]+)"?/);
                         }
-
-                        console.log('Filename Matches:', matches); 
-
                         if (matches && matches[1]) {
                             filename = decodeURIComponent(matches[1]);
                         }

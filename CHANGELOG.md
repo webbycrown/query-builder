@@ -35,4 +35,3 @@ All notable changes to this project will be documented in this file.
 
 * [Feature] Save, edit, delete, and execute queries dynamically.
 
-

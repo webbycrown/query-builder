@@ -118,6 +118,7 @@ The Query Builder Package is continuously evolving to provide more flexibility a
 3. **Scheduling Reports** – Automate report generation and email delivery.
 4. **Audit Logs & Query Tracking** – Keep a history of all executed queries with timestamps and user details. 
 5. **Will Add 2 Screen (Variant)** – Introduced two new UI screens to enhance user experience and workflow.  
+6. **Load Translations from Package** – Automatically load language files from the package.
 
 ### Contributor Suggestions
 We welcome community contributions! If you have ideas for new features or improvements, feel free to submit a pull request or open an issue on our repository.The Query Builder Package is continuously evolving to provide more flexibility and ease of use. Here are some planned features for future updates:

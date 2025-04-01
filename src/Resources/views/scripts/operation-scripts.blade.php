@@ -9,6 +9,7 @@
         let tablesComments = @json($tables_data);
         let conditionOperators = @json(generateSqlOperators());
         let apply_aggregate = @json(applySqlFunctions());
+        let having_operators = @json(havingOperator());
         let availableColumns = {};
         let selectedColumns = [];
         let tableRelations = [];
@@ -24,6 +25,7 @@
         let queryDetailConditions = queryDetails?.conditions ? Object.values(queryDetails.conditions) : [];
         let queryDetailGroupby = queryDetails?.groupby || [];
         let queryDetailOrderby = queryDetails?.orderby || [];
+        let queryDetailHaving = queryDetails?.having ? Object.values(queryDetails.having) : [];
         let setting_option_val = $('.setting_option').val();
 
         byDefaultConditionOperator();
@@ -158,52 +160,132 @@
         }
 
         function resetConditionSection() {
+            // Clear all condition-related containers
             $('#conditions').html('');
             $('#groupby-container').html('');
             $('#orderby-container').html('');
+
+            // Reset counters
             conditionCount = 0;
             groupByCount = 0;
             orderByCount = 0;
+
+            // Populate conditions if available
             if ( queryDetailConditions.length > 0 ) {
                 setTimeout(function(){
                     Object.entries(queryDetailConditions).forEach(([qryConditionKey, qryCondition]) => {
                         var qryColumn = qryCondition?.column || null;
                         var qryOperator = qryCondition?.operator || null;
                         var qryValue = qryCondition?.value || null;
+
+                        // Append condition HTML dynamically
                         appendConditionHtmlContent('edit', qryColumn, qryOperator, qryValue);
                     });
                     queryDetailColumns = [];
                 }, 500);
             }else{
 
+                // If no conditions exist, append a default condition input
                 appendConditionHtmlContent('edit')
             }
+
+            // Populate GROUP BY section if available
             if ( queryDetailGroupby.length > 0 ) {
                 setTimeout(function(){
                     Object.entries(queryDetailGroupby).forEach(([qryGroupKey, qryGroupby]) => {
                         var qryGrpColumn = qryGroupby?.column || null;
                         var qryGrpAggregation = qryGroupby?.aggregation || null;
                         var qryGrpAlias = qryGroupby?.alias || null;
+
+                        // Append Group By HTML dynamically
                         appendGroupByHtmlContent('edit', qryGrpColumn, qryGrpAggregation, qryGrpAlias);
                     });
                     queryDetailColumns = [];
                 }, 500);
             } else {
+                // If no group by exists, append a default input
                 appendGroupByHtmlContent('edit')
             }
+
+            // Populate ORDER BY section if available
             if ( queryDetailOrderby.length > 0 ) {
                 setTimeout(function(){
                     Object.entries(queryDetailOrderby).forEach(([qryOrderKey, qryOrderby]) => {
                         var qryOrderColumn = qryOrderby?.column || null;
                         var qryOrderOrder = qryOrderby?.order || null;
+
+                        // Append Order By HTML dynamically
                         appendOrderByHtmlContent('edit', qryOrderColumn, qryOrderOrder);
                     });
                     queryDetailColumns = [];
                 }, 500);
             } else {
+                // If no order by exists, append a default input
                 appendOrderByHtmlContent('edit')
             }
 
+            // Populate HAVING section if available
+            if ( queryDetailHaving.length > 0 ) {
+                setTimeout(function(){
+                    Object.entries(queryDetailHaving).forEach(([qryHavingKey, qryHavingby]) => {
+                        var qryHavingColumn = qryHavingby?.column || null;
+                        var qryHavingOperator = qryHavingby?.operator || null;
+                        var qryHavingValue = qryHavingby?.value || null;
+
+                        // Use setTimeout to ensure the elements are available before setting values
+                        setTimeout(function () {
+
+                            // Set the selected operator dynamically
+                            var selectElement = document.querySelector(`select[name="having[${qryHavingKey}][operator]"]`);
+                            if (selectElement && qryHavingOperator) {
+                                selectElement.value = qryHavingOperator; // Set selected value dynamically
+                            }
+                            // Set the selected column dynamically
+                            var selectColumn = document.querySelector(`select[name="having[${qryHavingKey}][column]"]`);
+                            if (selectColumn && qryHavingColumn) {
+                                selectColumn.value = qryHavingColumn; // Set selected value dynamically
+                            }
+
+                            // Set the selected value dynamically
+                            var selectValue = document.querySelector(`input[name="having[0][value]"]`);
+                            if (selectValue && qryHavingValue) {
+                                selectValue.value = qryHavingValue; // Set selected value dynamically
+                            }
+                            // Apply default settings for HAVING operators
+                            byDefaultHavingOptions();
+                    }, 100);
+                    });
+                    queryDetailColumns = [];
+                }, 500);
+            }
+
+        }
+
+        // Run byDefaultHavingOptions() on page load to set default values for all "having-operator" dropdowns
+        byDefaultHavingOptions();
+
+        function byDefaultHavingOptions(){
+            // Loop through each ".having-operator" dropdown
+            setTimeout(function(){
+                $(".having-operator").each(function () {
+                    if (!$(this).val()) {
+                        $(this).val(""); // Set default value if none is selected
+                    }
+                    $(this).trigger("change"); // Trigger change event to update dependent elements
+                });
+            }, 100);
+        }
+
+        // Listen for changes in the ".having-operator" dropdowns
+        $(document).on("change", ".having-operator", function () {
+            updatehavingbyNotes(this); // Call function to update notes
+        });
+
+        // Function to update the notes section when the operator changes
+        function updatehavingbyNotes(selectElement) {
+            let selectedOption = $(selectElement).find(":selected"); // Get the selected option
+            let notes = selectedOption.attr("data-notes") || ""; // Retrieve "data-notes" attribute or set empty string if not found
+            $(selectElement).closest(".having").find(".having-notes").text(notes); // Update the corresponding notes section
         }
 
         function resetColumnSelection() {
@@ -505,7 +587,7 @@
             updateGroupByDropdowns();
         });
 
-        // Remove Group By row
+            // Remove Group By row
         $(document).on('click', '.remove-groupby', function() {
             $(this).closest('.groupby-card').remove();
         });
@@ -559,6 +641,7 @@
                                 <select class="form-select groupby-aggregation" name="groupby[${groupByCount}][aggregation]">
                                     ${generateAggregateOptions(qryGrpAggregation)}
                                 </select>
+                                <p class="groupby-notes"></p>
                             </div>
                             <div class="col-md-4">
                                 <input type="text" class="form-control groupby-alias" name="groupby[${groupByCount}][alias]" placeholder="Alias Name" value="${qryGrpAlias ? qryGrpAlias : ''}">
@@ -567,10 +650,22 @@
                         </div>
                     </div>
             `;
-
+            byDefaultAggregateOptions();
             $('#groupby-container').append(newRow);
 
             groupByCount++;
+        }
+
+        function byDefaultAggregateOptions(){
+           // Run on page load for all condition-operator selects
+            setTimeout(function(){
+                $(".groupby-aggregation").each(function () {
+                    if (!$(this).val()) {
+                        $(this).val(""); // Set default if none is selected
+                    }
+                    $(this).trigger("change"); // Ensure change event fires
+                });
+            }, 100);
         }
 
         function generateAggregateOptions(selectedOperator = '') {
@@ -585,7 +680,7 @@
                         options += `<optgroup label="${category}">`;
                         for (const [key, operator] of Object.entries(operators)) {
                             const selected = (selectedOperator === operator.value) ? 'selected' : '';
-                            options += `<option value="${operator.value}" ${selected}>${operator.key}</option>`;
+                            options += `<option value="${operator.value}" ${selected} data-notes="${operator.notes}">${operator.key}</option>`;
                         }
                         options += `</optgroup>`;
                     }
@@ -593,6 +688,17 @@
             }
 
             return options;
+        }
+
+         // groupby Update on change
+        $(document).on("change", ".groupby-aggregation", function () {
+            updateGroupbyNotes(this);
+        });
+
+        function updateGroupbyNotes(selectElement) {
+            let selectedOption = $(selectElement).find(":selected");
+            let notes = selectedOption.attr("data-notes") || "";
+            $(selectElement).closest(".groupby-card").find(".groupby-notes").text(notes);
         }
 
         // Add Group By row

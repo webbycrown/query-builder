@@ -212,7 +212,6 @@ class QueryBuilderController extends Controller
      */
     public function getDataByQueryDetails(Request $request)
     {
-        // dd($request);
         // Retrieve request parameters
 
         $mainTable = $request->input('main_table');

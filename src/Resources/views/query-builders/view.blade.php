@@ -82,17 +82,18 @@
             e.preventDefault();
             // Get format from button (csv, xlsx, pdf)
             let format = $(this).data('format'); 
+            // Assign format and ID to formData
             formData.format = format;
             $.ajax({
                 url: "{{route('api.queries.export')}}",
                 type: 'GET',
                 data: formData,
                 xhrFields: {
-                    // Handle file response properly
+                    // Ensure binary response for file downloads
                     responseType: 'blob' 
                 },
                 success: function (response, status, xhr) {
-                    let filename = `export.${format}`;
+                    let filename = `export.${format}`; // Default filename
                     let disposition = xhr.getResponseHeader('Content-Disposition');
                     if (disposition && disposition.includes('attachment')) {
                     
@@ -104,41 +105,47 @@
                             matches = disposition.match(/filename="?([^"]+)"?/);
                         }
 
-                        console.log('Filename Matches:', matches); 
-
                         if (matches && matches[1]) {
                             filename = decodeURIComponent(matches[1]);
                         }
                     }
-
+                    // Create a downloadable blob object
                     let blob = new Blob([response], { type: xhr.getResponseHeader('Content-Type') });
                     let link = document.createElement("a");
                     link.href = window.URL.createObjectURL(blob);
-                    link.download = filename;
+                    link.download = filename; // Set the filename
+                    // Append the link to the document, trigger the download, and remove the link
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
                 },
                 error: function (xhr) {
+                    // Handle error response and log an error message
                     let errorMsg = xhr.responseJSON ? xhr.responseJSON.error : "Download failed!";
                     console.log(errorMsg);
                 }
             });
         });
 
+        // Get export format json from button
         $(document).on('click', '.export_btn', function (e) {
             e.preventDefault();
-            let format = $(this).data('format');
+            let format = $(this).data('format'); // Prevent default button behavior
+
+             // Set the export format and ID in formData
             formData.format = 'json';
+
+            // Send AJAX request to fetch the export data
             $.ajax({
                 url: "{{ route('api.queries.export') }}",
                 type: 'GET',
                 data: formData,
-                dataType: 'json', 
+                dataType: 'json',  // Expect JSON response
                 success: function (data, status, xhr) {
 
-                    let filename = "export.json"; 
+                    let filename = "export.json"; // Default filename
                     
+                    // Extract filename from Content-Disposition header if available
                     let disposition = xhr.getResponseHeader('Content-Disposition');
                     if (disposition && disposition.includes('attachment')) {
                     
