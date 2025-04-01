@@ -36,14 +36,16 @@
         cursor: pointer;
         color: #dc3545;
     }
-    .groupby-card {
+    .groupby-card,
+    .orderby-card {
         border: 1px solid #dee2e6;
         padding: 15px;
         margin-bottom: 15px;
         border-radius: 5px;
         background-color: #f8f9fa;
     }
-    .remove-groupby {
+    .remove-groupby,
+    .remove-orderby {
         float: right;
         cursor: pointer;
         color: #dc3545;

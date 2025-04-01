@@ -555,6 +555,11 @@ function generateSqlOperators($selectedOperator = '') {
             'value' => "IS NOT NULL",
             'notes' => "Find customers who have an email address."
         ], // Checks if a value is NOT NULL
+	    "BETWEEN" => [
+	        'key' => "BETWEEN",
+	        'value' => "BETWEEN",
+	        'notes' => "Find products priced between 50 and 100 (Enter values as: 50,100)."
+	    ], // Finds values within a range (inclusive)
         "SQL" => [
             'key' => "SQL",
             'value' => "SQL",
@@ -563,6 +568,43 @@ function generateSqlOperators($selectedOperator = '') {
     ];
     
     return $operators; // Return the array of operators
+}
+
+
+function havingOperator(){
+	$operators = [
+		 "=" => [
+            'key' => "=",
+            'value' => "=",
+            'notes' => "Find customers whose country is 'USA'."
+        ],               // Equal to
+        "<" => [
+            'key' => "<",
+            'value' => "<",
+            'notes' => "Find products priced below 50."
+        ],               // Less than
+        ">" => [
+            'key' => ">",
+            'value' => ">",
+            'notes' => "Find employees older than 30."
+        ],               // Greater than
+        "<=" => [
+            'key' => "<=",
+            'value' => "<=",
+            'notes' => "Find orders with a quantity of 5 or less."
+        ],             // Less than or equal to
+        ">=" => [
+            'key' => ">=",
+            'value' => ">=",
+            'notes' => "Find students with grades 90 or above."
+        ],             // Greater than or equal to
+        "!=" => [
+            'key' => "!=",
+            'value' => "!=",
+            'notes' => "Find customers who are NOT from 'USA'."
+        ], 
+	];	
+	 return $operators;  // Make sure to return the operators array
 }
 
 
@@ -605,6 +647,14 @@ function generateWhereConditionForOperator( $query, $condition ){
             case 'NOT REGEXP':
                 $query->where($condition['column'], 'NOT REGEXP', $condition['value']);
                 break;
+                
+		    case 'BETWEEN':
+		        $values = explode(',', $condition['value']); // Convert "50,100" into ['50', '100']
+
+		        if (count($values) === 2) {
+		            $query->whereBetween($condition['column'], [$values[0], $values[1]]);
+		        }
+		        break;
 
             default:
                 $query->where($condition['column'], $condition['operator'], $condition['value']);
@@ -615,43 +665,51 @@ function generateWhereConditionForOperator( $query, $condition ){
 }
 
 function applyAggregatesToQuery($query, $selectedColumns, $tableInfo, $groupByColumns) {
-    $groupByFields = [];
-
+	$groupByRawFields =  $selectedAlias = $groupByFields = [];
+   	 // Determine the selected columns for the query
     $selectedColumnsForSelect = (is_array($selectedColumns) && count($selectedColumns) > 0) ? $selectedColumns : array_flip($tableInfo);
 
     foreach ($groupByColumns as $groupByColumn) {
     	if (!empty($groupByColumn['column'])) {
 
     		$isAlias = (!is_null($groupByColumn['alias']) && !empty($groupByColumn['alias']));
-
+    		 // Extract table and column name
     		$tableColumnKey = explode('.',$groupByColumn['column']);
     		$columnsWithComment = get_table_columns_comment($tableColumnKey[0], 'manage_db');
     		$columnsWithComment = $columnsWithComment->toarray();
     		$groupByComment = $columnsWithComment[$tableColumnKey[1]]->comment;
 
     		if (!empty($groupByColumn['aggregation'])) {
-
+    			// Create an alias for the aggregation
     			$aliasKey = strtolower(str_replace('.', '_', "{$groupByColumn['aggregation']}_{$groupByColumn['column']}"));
     			$aliaslabel = ucwords(str_replace('_', ' ', $aliasKey));
     			$aliaslabel = (!is_null($groupByColumn['alias']) && !empty($groupByColumn['alias'])) ? $groupByColumn['alias'] : $aliaslabel;
 
     			$isAggregationFlag = false;
-    			
-    			switch (strtoupper($groupByColumn['aggregation'])) {
-    				
-    				case 'SUM':
-	    				$selectedColumns[] = DB::raw("SUM({$groupByColumn['column']}) AS {$aliasKey}");
-	    				$isAggregationFlag = true;
-    				break;
 
-    				case 'GROUP_CONCAT':
-	    				$selectedColumns[] = DB::raw("GROUP_CONCAT({$groupByColumn['column']}) AS {$aliasKey}");
-	    				$isAggregationFlag = true;
-    				break;
+    			$aggregationType = strtoupper($groupByColumn['aggregation']);
+    			$aggregateFunctions = applySqlFunctions();
+
+    			// Check if aggregation type is valid and apply it
+    			if (isset($aggregateFunctions["Aggregation"][$aggregationType])) {
+    				if ($aggregationType === "COUNT DISTINCT") {
+				        // Special handling for COUNT DISTINCT
+    					$selectedColumns[] = DB::raw("COUNT(DISTINCT {$groupByColumn['column']}) AS {$aliasKey}");
+    				} else {
+    					$selectedColumns[] = DB::raw("{$aggregateFunctions["Aggregation"][$aggregationType]['value']}({$groupByColumn['column']}) AS {$aliasKey}");
+    				}
+    				$isAggregationFlag = true;
+    			}
+
+    			if (isset($aggregateFunctions["Functions"][$aggregationType])) {
+    				$selectedColumns[] = DB::raw("{$aggregateFunctions["Functions"][$aggregationType]['value']}({$groupByColumn['column']}) AS {$aliasKey}");
+    				$isAggregationFlag = true;
+    				$groupByRawFields[] = $groupByColumn['column'];
     			}
 
     			if ($isAggregationFlag) {
     				$selectedColumnsForSelect[$aliaslabel] = $aliasKey;
+
     				if( array_key_exists($groupByComment, $selectedColumns) ){
     					unset($selectedColumns[$groupByComment]);
     				}
@@ -659,15 +717,20 @@ function applyAggregatesToQuery($query, $selectedColumns, $tableInfo, $groupByCo
     					unset($selectedColumnsForSelect[$groupByComment]);
     				}
     			}
-
     		}else{
+    			// Handle non-aggregated columns
     			$aliaslabel = $isAlias ? $groupByColumn['alias'] : $groupByComment;
 
     			$aliasKey = $isAlias ? ucwords(str_replace(' ', '_', $aliaslabel)) : $groupByColumn['column'];
 
     			$selectedColumns[] = $isAlias ? "{$groupByColumn['column']} AS {$aliasKey}" : $groupByColumn['column'];
 
-    			$groupByFields[] = $isAlias ? $aliasKey : $groupByColumn['column'];
+    			if (strpos($groupByColumn['column'], '(') !== false) { 
+	                   // If the column contains a function like CHAR_LENGTH(), treat it as raw
+    				$groupByRawFields[] = $groupByColumn['column'];
+    			} else {
+    				$groupByFields[] = $isAlias ? $aliasKey : $groupByColumn['column'];
+    			}
 
 				if ($isAlias) {
     				if( array_key_exists($groupByComment, $selectedColumnsForSelect) ){
@@ -677,10 +740,16 @@ function applyAggregatesToQuery($query, $selectedColumns, $tableInfo, $groupByCo
 				}
     		}
 
-
+    		// Store alias mapping
+    		$selectedAlias[$groupByColumn['column']][] = [ 	
+    			'aliasKey' => $aliasKey,
+    			'aliaslabel' => $aliaslabel,
+    		];
     	}
     }
 
+
+    // Apply the selected columns to the query
     if (!empty($selectedColumns)) {
     	$query->select($selectedColumns);
     }
@@ -689,11 +758,20 @@ function applyAggregatesToQuery($query, $selectedColumns, $tableInfo, $groupByCo
     if (!empty($groupByFields)) {
         $query->groupBy($groupByFields); // Use spread operator for Laravel compatibility
     }
+
+    // Apply raw GROUP BY for SQL functions
+    if (!empty($groupByRawFields)) {
+    	foreach ($groupByRawFields as $rawField) {
+    		$query->groupByRaw($rawField);
+    	}
+    }
+
     $selectedColumns = $selectedColumnsForSelect;
-    
+
      return [
         'query' => $query,
-        'selectedColumns' => $selectedColumns
+        'selectedColumns' => $selectedColumns,
+        'selectedAlias' => $selectedAlias
     ];
 }
 
@@ -717,6 +795,106 @@ function getLabelMode() {
 
     // Convert the option to lowercase for consistency and capitalize the first letter
     return ucfirst(strtolower($env_option));
+}
+
+
+/**
+ * Returns an array of SQL functions and aggregation functions with their keys and values.
+ *
+ * @return array An associative array containing SQL functions and aggregation functions.
+ */
+function applySqlFunctions() {
+    return [
+        "Functions" => [
+            "CHAR_LENGTH" => [
+                'key' => "CHAR_LENGTH",
+                'value' => "CHAR_LENGTH",
+                'notes' => "This tells you how many letters or characters are in a word or phrase. For example, the word 'hello' has 5 letters."
+            ],
+            "DATE" => [
+                'key' => "DATE",
+                'value' => "DATE",
+                'notes' => "This only shows the date from a full date and time. For example, if you have '2024-03-21 15:30:00', it will show just '2024-03-21'."
+            ],
+            "FROM_UNIXTIME" => [
+                'key' => "FROM_UNIXTIME",
+                'value' => "FROM_UNIXTIME",
+                'notes' => "This takes a number (like '1234567890') and converts it into a readable date and time, like '2009-02-13 23:31:30'."
+            ],
+            "LOWER" => [
+                'key' => "LOWER",
+                'value' => "LOWER",
+                'notes' => "This turns everything in a word to lowercase. For example, 'HELLO' would become 'hello'."
+            ],
+            "ROUND" => [
+                'key' => "ROUND",
+                'value' => "ROUND",
+                'notes' => "This rounds a number to a certain number of decimal places. For example, rounding 3.14159 to 2 decimals will give you 3.14."
+            ],
+            "FLOOR" => [
+                'key' => "FLOOR",
+                'value' => "FLOOR",
+                'notes' => "This rounds a number **down** to the nearest whole number. For example, 3.9 would become 3."
+            ],
+            "CEIL" => [
+                'key' => "CEIL",
+                'value' => "CEIL",
+                'notes' => "This rounds a number **up** to the nearest whole number. For example, 3.1 would become 4."
+            ],
+            "SEC_TO_TIME" => [
+                'key' => "SEC_TO_TIME",
+                'value' => "SEC_TO_TIME",
+                'notes' => "This converts a number of seconds into a time format (hours:minutes:seconds). For example, 3661 seconds becomes '01:01:01'."
+            ],
+            "TIME_TO_SEC" => [
+                'key' => "TIME_TO_SEC",
+                'value' => "TIME_TO_SEC",
+                'notes' => "This takes a time in hours, minutes, and seconds, and converts it into total seconds. For example, '01:01:01' becomes 3661 seconds."
+            ],
+            "UPPER" => [
+                'key' => "UPPER",
+                'value' => "UPPER",
+                'notes' => "This turns everything in a word to uppercase. For example, 'hello' would become 'HELLO'."
+            ],
+        ],
+        "Aggregation" => [
+            "AVG" => [
+                'key' => "AVG",
+                'value' => "AVG",
+                'notes' => "This calculates the average of a set of numbers. For example, the average of 2, 4, and 6 is 4."
+            ],
+            "COUNT" => [
+                'key' => "COUNT",
+                'value' => "COUNT",
+                'notes' => "This counts how many items are in a list. For example, if you have 3 items, COUNT will give you 3."
+            ],
+            "COUNT DISTINCT" => [
+                'key' => "COUNT DISTINCT",
+                'value' => "COUNT(DISTINCT ",
+                'notes' => "This counts how many **unique** items are in a list. For example, if you have 1, 1, and 2, COUNT DISTINCT will give you 2."
+            ],
+            "GROUP_CONCAT" => [
+                'key' => "GROUP_CONCAT",
+                'value' => "GROUP_CONCAT",
+                'notes' => "This combines values into one long list. For example, combining 'John', 'Alice', and 'Bob' into one string: 'John,Alice,Bob'."
+            ],
+            "MAX" => [
+                'key' => "MAX",
+                'value' => "MAX",
+                'notes' => "This finds the largest number in a set. For example, if you have 3, 7, and 1, the MAX number is 7."
+            ],
+            "MIN" => [
+                'key' => "MIN",
+                'value' => "MIN",
+                'notes' => "This finds the smallest number in a set. For example, if you have 3, 7, and 1, the MIN number is 1."
+            ],
+            "SUM" => [
+                'key' => "SUM",
+                'value' => "SUM",
+                'notes' => "This adds up all the numbers in a list. For example, adding 1, 2, and 3 gives you 6."
+            ],
+        ]
+    ];
 }
 
 
