@@ -138,6 +138,8 @@ class QueryBuilderController extends Controller
         $query_form = DB::connection($this->conn_key)->table('query_forms')->where('id', $id)->first();
         $query_details = json_encode( json_decode( $query_form->query_details ) );
 
+        logAudit('view', 'query_forms', $id, [], (array) $query_form);
+
         return view( 'wc_querybuilder::query-builders.view', compact('query_form', 'query_details') );
     }
 
@@ -213,7 +215,6 @@ class QueryBuilderController extends Controller
     public function getDataByQueryDetails(Request $request)
     {
         // Retrieve request parameters
-
         $mainTable = $request->input('main_table');
 
         $joins = $request->input('joins', []);
@@ -338,7 +339,10 @@ class QueryBuilderController extends Controller
             // Apply groupBy
             if (!empty($orderByColumns)) {
                 foreach ($orderByColumns as $orderByColumn) {
-                    $query->orderBy($orderByColumn['column'], $orderByColumn['order']);
+                    if( !empty($orderByColumn['column']) &&  !empty($orderByColumn['order']) ){
+                        $query->orderBy($orderByColumn['column'], $orderByColumn['order']);
+
+                    }
                 }
             }
 
@@ -376,7 +380,7 @@ class QueryBuilderController extends Controller
 
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Query error',
+                'error' => __('querybuilder::messages.error'),
                 'message' => $e->getMessage()
             ], 500);
         }
@@ -423,7 +427,7 @@ class QueryBuilderController extends Controller
 
             // Validate the requested format
             if (!in_array($format, $allowedFormats)) {
-                return response()->json(['error' => 'Invalid export format'], 200);
+                return response()->json(['error' => __('querybuilder::messages.export_invalid_format')], 200);
             }
 
             // Fetch data based on query details
@@ -432,7 +436,7 @@ class QueryBuilderController extends Controller
 
             // Validate if data is available for export
             if (!isset($data['data']) || empty($data['data'])) {
-                return response()->json(['error' => 'No data available for export'], 400);
+                return response()->json(['error' => __('querybuilder::messages.export_no_data')], 400);
             }
 
             $results = $data['data'];
@@ -443,19 +447,23 @@ class QueryBuilderController extends Controller
             // Handle export based on format
             switch ($format) {
                 case 'csv':
-                return $exportService->exportCSV($results, $columns, $query_title);
+                    logAudit('download', 'query_forms', $data_id, [], ['format' => 'csv']);
+                    return $exportService->exportCSV($results, $columns, $query_title);
                 case 'xlsx':
-                return $exportService->exportExcel($results, $columns, $query_title);
+                    logAudit('download', 'query_forms', $data_id, [], ['format' => 'xlsx']);
+                    return $exportService->exportExcel($results, $columns, $query_title);
                 case 'pdf':
-                return $exportService->exportPDF($results, $columns, $query_title);
+                    logAudit('download', 'query_forms', $data_id, [], ['format' => 'pdf']);
+                    return $exportService->exportPDF($results, $columns, $query_title);
                 case 'json':
-                return $exportService->exportJSON($results, $columns, $query_title);
+                    logAudit('download', 'query_forms', $data_id, [], ['format' => 'json']);
+                    return $exportService->exportJSON($results, $columns, $query_title);
                 default:
-                return response()->json(['error' => 'Unexpected error'], 200);
+                return response()->json(['error' => __('querybuilder::messages.unexpected_error')], 200);
             }
         } catch (\Exception $e) {
              // Handle any unexpected errors gracefully
-            return response()->json(['error' => 'Something went wrong', 'message' => $e->getMessage()], 200);
+            return response()->json(['error' => __('querybuilder::messages.error'), 'message' => $e->getMessage()], 200);
         }
     }
 
@@ -502,27 +510,36 @@ class QueryBuilderController extends Controller
             // Insert or update query form
             $if_exists = DB::connection( $db_key )->table( 'query_forms' )->where( 'id', $qry_id )->first();
             if ( $if_exists ) {
+                $originalData = (array) $if_exists; // Cast to array for logging
+
                 $in_query_forms = DB::connection( $db_key )->table( 'query_forms' )->where( 'id', $qry_id )->update( $store_data );
+
+                $newData = array_merge($originalData, $store_data); // Simulate post-update state
+                logAudit('update', 'query_forms', $qry_id,$originalData,$newData);
             } else {
                 $qry_id = DB::connection( $db_key )->table( 'query_forms' )->insertGetId( $store_data );
+                // Optionally fetch the full inserted record (recommended for audit logs)
+                $newData = DB::connection($db_key)->table('query_forms')->where('id', $qry_id)->first();
+                logAudit('create', 'query_forms', $qry_id, [], (array) $newData);
             }
 
             $query_forms = DB::connection( $db_key )->table( 'query_forms' )->where( 'id', $qry_id )->first();
 
-            session()->flash('success', 'The query details were successfully saved.');
+
+            session()->flash('success', __('querybuilder::messages.query_save_success'));
 
             return response()->json([
                 'result'    => true,
-                'message'   => 'The query details were successfully saved.',
+                'message'   => __('querybuilder::messages.query_save_success'),
                 'data'      => $query_forms,
             ], 200);
         } catch (\Exception $e) {
                 // Improved error handling with better exception catching
-            session()->flash('error', 'Failed to save the query details.');
+            session()->flash('error', __('querybuilder::messages.query_save_error'));
             
             return response()->json([
                 'result'    => false,
-                'message'   => 'Failed to save the query details.',
+                'message'   => __('querybuilder::messages.query_save_error'),
                 'messages'  => $e->getMessage()
             ], 500);
         }
@@ -546,18 +563,24 @@ class QueryBuilderController extends Controller
 
             if ( $query_form ) {
                 // Delete the record if found
-                DB::connection($this->conn_key)->table('query_forms')->where('id', $id)->delete();
 
+                                // Fetch the model data before deleting it (so you can log the original values)
+                $model = DB::connection($this->conn_key)->table('query_forms')->where('id', $id)->first();
+
+                // Log the delete action with the old values
+                logAudit('delete', 'query_forms', $id, (array) $model, []);
+                
+                DB::connection($this->conn_key)->table('query_forms')->where('id', $id)->delete();
                 return response()->json([
                     'result'    => true,
-                    'message'   => 'The query report was successfully deleted.',
+                    'message'   => __('querybuilder::messages.query_delete_success'),
                 ], 200);
 
             } else {
 
                 return response()->json([
                     'result'    => false,
-                    'message'   => 'The query report was not found.',
+                    'message'   => __('querybuilder::messages.query_delete_error_not_found'),
                 ], 200);
 
             }
@@ -566,7 +589,7 @@ class QueryBuilderController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'result'    => false,
-                'message'   => 'Failed to delete the query report.',
+                'message'   => __('querybuilder::messages.query_delete_error_failed'),
                 'messages'  => $e->getMessage()
             ], 500);
         }

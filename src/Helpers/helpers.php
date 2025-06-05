@@ -478,92 +478,92 @@ function generateSqlOperators($selectedOperator = '') {
         "=" => [
             'key' => "=",
             'value' => "=",
-            'notes' => "Find customers whose country is 'USA'."
+            'notes' => __("querybuilder::messages.=")
         ],               // Equal to
         "<" => [
             'key' => "<",
             'value' => "<",
-            'notes' => "Find products priced below 50."
+            'notes' =>  __("querybuilder::messages.<")
         ],               // Less than
         ">" => [
             'key' => ">",
             'value' => ">",
-            'notes' => "Find employees older than 30."
+            'notes' =>  __("querybuilder::messages.>")
         ],               // Greater than
         "<=" => [
             'key' => "<=",
             'value' => "<=",
-            'notes' => "Find orders with a quantity of 5 or less."
+            'notes' =>  __("querybuilder::messages.<=")
         ],             // Less than or equal to
         ">=" => [
             'key' => ">=",
             'value' => ">=",
-            'notes' => "Find students with grades 90 or above."
+            'notes' =>  __("querybuilder::messages.>=")
         ],             // Greater than or equal to
         "!=" => [
             'key' => "!=",
             'value' => "!=",
-            'notes' => "Find customers who are NOT from 'USA'."
+            'notes' =>  __("querybuilder::messages.!=")
         ],             // Not equal to
         "LIKE" => [
             'key' => "LIKE",
             'value' => "LIKE",
-            'notes' => "Find customers whose name starts with 'A'."
+            'notes' =>  __("querybuilder::messages.LIKE")
         ],         // Pattern matching (case-sensitive)
         "LIKE%%" => [
             'key' => "LIKE%%",
             'value' => "LIKE%%",
-            'notes' => "Find customers whose name contains 'John'."
+            'notes' => __("querybuilder::messages.LIKE%%")
         ],     // Possible typo? Should be "LIKE" with wildcards
         "REGEXP" => [
             'key' => "REGEXP",
             'value' => "REGEXP",
-            'notes' => "Find emails ending in .com or .net."
+            'notes' => __("querybuilder::messages.REGEXP")
         ],     // Regular expression matching
         "IN" => [
             'key' => "IN",
             'value' => "IN",
-            'notes' => "Find employees in departments 1, 2, or 3."
+            'notes' => __("querybuilder::messages.IN")
         ],             // Matches any value in a list
         "FIND_IN_SET" => [
             'key' => "FIND_IN_SET",
             'value' => "FIND_IN_SET",
-            'notes' => "Find users with role 'admin' in a comma-separated list."
+            'notes' => __("querybuilder::messages.FIND_IN_SET")
         ], // Checks if a value exists in a comma-separated list
         "IS NULL" => [
             'key' => "IS NULL",
             'value' => "IS NULL",
-            'notes' => "Find customers who haven't provided an email."
+            'notes' => __("querybuilder::messages.IS NULL")
         ],   // Checks if a value is NULL
         "NOT LIKE" => [
             'key' => "NOT LIKE",
             'value' => "NOT LIKE",
-            'notes' => "Find customers whose name does NOT start with 'A'."
+            'notes' => __("querybuilder::messages.NOT LIKE")
         ], // Negated pattern matching
         "NOT REGEXP" => [
             'key' => "NOT REGEXP",
             'value' => "NOT REGEXP",
-            'notes' => "Find emails that do NOT end in .com or .net."
+            'notes' =>  __("querybuilder::messages.NOT REGEXP")
         ], // Negated regular expression matching
         "NOT IN" => [
             'key' => "NOT IN",
             'value' => "NOT IN",
-            'notes' => "Find employees NOT in departments 1, 2, or 3."
+            'notes' => __("querybuilder::messages.NOT IN")
         ],     // Matches any value NOT in a list
         "IS NOT NULL" => [
             'key' => "IS NOT NULL",
             'value' => "IS NOT NULL",
-            'notes' => "Find customers who have an email address."
+            'notes' => __("querybuilder::messages.IS NOT NULL")
         ], // Checks if a value is NOT NULL
 	    "BETWEEN" => [
 	        'key' => "BETWEEN",
 	        'value' => "BETWEEN",
-	        'notes' => "Find products priced between 50 and 100 (Enter values as: 50,100)."
+	        'notes' => __("querybuilder::messages.BETWEEN")
 	    ], // Finds values within a range (inclusive)
         "SQL" => [
             'key' => "SQL",
             'value' => "SQL",
-            'notes' => "Depends on implementation, used for advanced filtering"
+            'notes' => __("querybuilder::messages.SQL")
         ],            // Possible placeholder for raw SQL conditions
     ];
     
@@ -576,32 +576,32 @@ function havingOperator(){
 		 "=" => [
             'key' => "=",
             'value' => "=",
-            'notes' => "Find customers whose country is 'USA'."
+            'notes' => __("querybuilder::messages.=")
         ],               // Equal to
         "<" => [
             'key' => "<",
             'value' => "<",
-            'notes' => "Find products priced below 50."
+            'notes' => __("querybuilder::messages.<")
         ],               // Less than
         ">" => [
             'key' => ">",
             'value' => ">",
-            'notes' => "Find employees older than 30."
+            'notes' => __("querybuilder::messages.>")
         ],               // Greater than
         "<=" => [
             'key' => "<=",
             'value' => "<=",
-            'notes' => "Find orders with a quantity of 5 or less."
+            'notes' => __("querybuilder::messages.<=")
         ],             // Less than or equal to
         ">=" => [
             'key' => ">=",
             'value' => ">=",
-            'notes' => "Find students with grades 90 or above."
+            'notes' => __("querybuilder::messages.>=")
         ],             // Greater than or equal to
         "!=" => [
             'key' => "!=",
             'value' => "!=",
-            'notes' => "Find customers who are NOT from 'USA'."
+            'notes' => __("querybuilder::messages.!=")
         ], 
 	];	
 	 return $operators;  // Make sure to return the operators array
@@ -809,94 +809,213 @@ function applySqlFunctions() {
             "CHAR_LENGTH" => [
                 'key' => "CHAR_LENGTH",
                 'value' => "CHAR_LENGTH",
-                'notes' => "This tells you how many letters or characters are in a word or phrase. For example, the word 'hello' has 5 letters."
+                'notes' => __("querybuilder::messages.functions.CHAR_LENGTH"),
             ],
             "DATE" => [
                 'key' => "DATE",
                 'value' => "DATE",
-                'notes' => "This only shows the date from a full date and time. For example, if you have '2024-03-21 15:30:00', it will show just '2024-03-21'."
+                'notes' => __("querybuilder::messages.functions.DATE"),
             ],
             "FROM_UNIXTIME" => [
                 'key' => "FROM_UNIXTIME",
                 'value' => "FROM_UNIXTIME",
-                'notes' => "This takes a number (like '1234567890') and converts it into a readable date and time, like '2009-02-13 23:31:30'."
+                'notes' => __("querybuilder::messages.functions.FROM_UNIXTIME"),
             ],
             "LOWER" => [
                 'key' => "LOWER",
                 'value' => "LOWER",
-                'notes' => "This turns everything in a word to lowercase. For example, 'HELLO' would become 'hello'."
+                'notes' => __("querybuilder::messages.functions.LOWER"),
             ],
             "ROUND" => [
                 'key' => "ROUND",
                 'value' => "ROUND",
-                'notes' => "This rounds a number to a certain number of decimal places. For example, rounding 3.14159 to 2 decimals will give you 3.14."
+                'notes' => __("querybuilder::messages.functions.ROUND"),
             ],
             "FLOOR" => [
                 'key' => "FLOOR",
                 'value' => "FLOOR",
-                'notes' => "This rounds a number **down** to the nearest whole number. For example, 3.9 would become 3."
+                'notes' => __("querybuilder::messages.functions.FLOOR"),
             ],
             "CEIL" => [
                 'key' => "CEIL",
                 'value' => "CEIL",
-                'notes' => "This rounds a number **up** to the nearest whole number. For example, 3.1 would become 4."
+                'notes' => __("querybuilder::messages.functions.CEIL"),
             ],
             "SEC_TO_TIME" => [
                 'key' => "SEC_TO_TIME",
                 'value' => "SEC_TO_TIME",
-                'notes' => "This converts a number of seconds into a time format (hours:minutes:seconds). For example, 3661 seconds becomes '01:01:01'."
+                'notes' => __("querybuilder::messages.functions.SEC_TO_TIME"),
             ],
             "TIME_TO_SEC" => [
                 'key' => "TIME_TO_SEC",
                 'value' => "TIME_TO_SEC",
-                'notes' => "This takes a time in hours, minutes, and seconds, and converts it into total seconds. For example, '01:01:01' becomes 3661 seconds."
+                'notes' => __("querybuilder::messages.functions.TIME_TO_SEC"),
             ],
             "UPPER" => [
                 'key' => "UPPER",
                 'value' => "UPPER",
-                'notes' => "This turns everything in a word to uppercase. For example, 'hello' would become 'HELLO'."
+                'notes' => __("querybuilder::messages.functions.UPPER"),
             ],
         ],
         "Aggregation" => [
             "AVG" => [
                 'key' => "AVG",
                 'value' => "AVG",
-                'notes' => "This calculates the average of a set of numbers. For example, the average of 2, 4, and 6 is 4."
+                'notes' => __("querybuilder::messages.aggregation.AVG"),
             ],
             "COUNT" => [
                 'key' => "COUNT",
                 'value' => "COUNT",
-                'notes' => "This counts how many items are in a list. For example, if you have 3 items, COUNT will give you 3."
+                'notes' => __("querybuilder::messages.aggregation.COUNT"),
             ],
             "COUNT DISTINCT" => [
                 'key' => "COUNT DISTINCT",
                 'value' => "COUNT(DISTINCT ",
-                'notes' => "This counts how many **unique** items are in a list. For example, if you have 1, 1, and 2, COUNT DISTINCT will give you 2."
+                'notes' => __("querybuilder::messages.aggregation.COUNT DISTINCT"),
             ],
             "GROUP_CONCAT" => [
                 'key' => "GROUP_CONCAT",
                 'value' => "GROUP_CONCAT",
-                'notes' => "This combines values into one long list. For example, combining 'John', 'Alice', and 'Bob' into one string: 'John,Alice,Bob'."
+                'notes' => __("querybuilder::messages.aggregation.GROUP_CONCAT"),
             ],
             "MAX" => [
                 'key' => "MAX",
                 'value' => "MAX",
-                'notes' => "This finds the largest number in a set. For example, if you have 3, 7, and 1, the MAX number is 7."
+                'notes' => __("querybuilder::messages.aggregation.MAX"),
             ],
             "MIN" => [
                 'key' => "MIN",
                 'value' => "MIN",
-                'notes' => "This finds the smallest number in a set. For example, if you have 3, 7, and 1, the MIN number is 1."
+                'notes' => __("querybuilder::messages.aggregation.MIN"),
             ],
             "SUM" => [
                 'key' => "SUM",
                 'value' => "SUM",
-                'notes' => "This adds up all the numbers in a list. For example, adding 1, 2, and 3 gives you 6."
+                'notes' => __("querybuilder::messages.aggregation.SUM"),
             ],
         ]
     ];
 }
 
+/**
+ * Returns an array of logical condition operators used in query builders.
+ *
+ * This is typically used to specify how conditions within a group should be combined — 
+ * either with AND (all conditions must be true) or OR (any condition can be true).
+ *
+ * @return array
+ */
+function conditionsAddOr() {
+    return [
+        // Logical AND: All conditions must be satisfied
+        "AND" => [
+            'key' => "AND",    // Label for display
+            'value' => "AND",  // Value used in logic processing
+        ],
+        
+        // Logical OR: At least one condition must be satisfied
+        "OR" => [
+            'key' => "OR",     // Label for display
+            'value' => "OR",   // Value used in logic processing
+        ],
+    ];
+}
+
+
+
+/**
+ * Applies grouped conditions to a Laravel query builder instance.
+ *
+ * This function handles nested condition groups where each group may use its own logical operator
+ * (AND/OR), and each condition inside the group may also use different logical operators.
+ *
+ * @param \Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder $query
+ * @param array $groups The group of conditions as submitted from the front-end
+ * @return mixed The modified query builder instance
+ */
+function applyGroupedConditions(&$query, array $groups)
+{
+     // Prepare and validate condition groups
+    $compiledGroups = [];
+
+    foreach ($groups as $group) {
+    	// Filter out any invalid conditions (missing column, operator, or value)
+        $validConditions = array_values(array_filter($group['group_conditions'] ?? [], function ($cond) {
+            return !empty($cond['column']) && !empty($cond['operator']) && $cond['value'] !== '';
+        }));
+
+        if (!empty($validConditions)) {
+            $compiledGroups[] = [
+                'logic' => strtoupper($group['and-or-conditions'] ?? 'AND'),  // Group-level logic (between groups)
+                'group_condition' => $validConditions, // List of valid conditions in this group
+            ];
+        }
+    }
+
+    // Apply all groups using nested where/orWhere logic
+    $query->where(function ($outer) use ($compiledGroups) {
+        foreach ($compiledGroups as $gIndex => $group) {
+            $groupLogic = $gIndex === 0 ? 'where' : (strtoupper($compiledGroups[$gIndex - 1]['logic']) === 'OR' ? 'orWhere' : 'where');
+
+            // Nest conditions inside each group
+            $outer->$groupLogic(function ($subQ) use ($group) {
+                foreach ($group['group_condition'] as $cIndex => $cond) {
+                	// Determine whether to use `where` or `orWhere` for individual conditions
+                	if($cIndex == 0 ) {
+                		// First condition in group
+                		$method = $cond['conditions'] === 'OR' ? 'orWhere' : 'where';
+                	}else{
+                		// Use the previous condition's 'conditions' key to determine AND/OR
+                        $prevLogic = strtoupper($group['group_condition'][$cIndex - 1]['conditions'] ?? 'AND');
+                        $method = $prevLogic === 'OR' ? 'orWhere' : 'where';
+                    }
+
+                     // Apply condition to sub-query
+                    $subQ->$method($cond['column'], $cond['operator'], $cond['value']);
+                }
+            });
+        }
+    });
+
+    return $query;
+}
+
+/**
+ * Logs an audit entry for a specific action performed on a model.
+ *
+ * @param string $action      The action performed (e.g., view, create, update, delete, download).
+ * @param string $model       The model name (e.g., 'query_forms', 'users').
+ * @param int    $model_id    The ID of the model record affected.
+ * @param array  $old         The previous state of the record (before changes) [optional].
+ * @param array  $new         The new state of the record (after changes) [optional].
+ *
+ * This function stores audit information such as:
+ * - The user performing the action
+ * - IP address and user agent
+ * - Affected model and record ID
+ * - Old and new values for state tracking
+ * - The current database context
+ * - Timestamps for the audit log
+ */
+function logAudit($action, $model, $model_id, $old = [], $new = [])
+{
+    $auditData = [
+        'user_id'    => optional(Auth::user())->id,           // ID of the user who performed the action
+        'ip_address' => Request::ip(),                        // IP address of the user
+        'user_agent' => Request::userAgent(),                 // Browser/Client user agent
+        'action'     => $action,                              // Action type (create, update, delete, etc.)
+        'model'      => $model,                               // Model/table name affected
+        'model_id'   => $model_id,                            // ID of the record affected
+        'old_values' => json_encode($old),                    // JSON-encoded old values
+        'new_values' => json_encode($new),                    // JSON-encoded new values
+        'database'   => get_database_name(),                  // Current DB context for multi-tenant systems
+        'created_at' => date('Y-m-d h:i:s'),                  // Timestamp of creation
+        'updated_at' => date('Y-m-d h:i:s'),                  // Timestamp of last update
+    ];
+
+    // Insert audit record into the main database's audit_logs table
+    DB::connection(connect_to_main_db())->table('audit_logs')->insert($auditData);
+}
 
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------- */

@@ -5,7 +5,8 @@ namespace Webbycrown\QueryBuilder\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Route;
-
+use Illuminate\Console\Scheduling\Schedule;
+use Webbycrown\QueryBuilder\Console\Commands\GenerateScheduledReports;
 
 /**
  * Service provider for the QueryBuilder package.
@@ -39,6 +40,16 @@ class QueryBuilderServiceProvider extends ServiceProvider
         // Include a helpers file containing custom utility functions.
         require_once __DIR__ . '/../Helpers/helpers.php';
 
+        // Load translations
+        $this->loadTranslationsFrom(__DIR__.'/../Resources/lang', 'querybuilder');
+
+        $this->publishes([
+            __DIR__.'/../Resources/lang' => resource_path('lang/vendor/querybuilder'),
+        ], 'translations');
+
+         // Register commands in the console.
+        $this->registerCommands();
+
     }
     
     /**
@@ -52,6 +63,23 @@ class QueryBuilderServiceProvider extends ServiceProvider
     public function register()
     {
         // This function is left empty, but can be used to register bindings.
+    }
+
+
+    /**
+     * Schedule the command to run.
+     *
+     * @return void
+     */
+    public function registerCommands(): void
+    {
+        if (! $this->app->runningInConsole()) {
+            return;
+        }
+        // Schedule your custom command to run daily (or any other frequency you prefer)
+        $this->commands([
+            GenerateScheduledReports::class,
+        ]);
     }
     
 

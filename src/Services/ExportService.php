@@ -78,45 +78,62 @@ class ExportService
     *
     * @return \Symfony\Component\HttpFoundation\StreamedResponse Returns a streamed response for downloading the CSV file.
     */
-    public function exportCSV($data, $columns, $query_title)
-    {
-        // If data is a JSON response, extract the actual data array
-        if ($data instanceof \Illuminate\Http\JsonResponse) {
-            $data = $data->getData(true)['data'] ?? [];
-        }
+    public function exportCSV($data, $columns, $query_title, $type = 0){
 
-        // Return an error response if there's no data to export
+        // Extract data from JsonResponse if needed
+        if ($data instanceof \Illuminate\Http\JsonResponse) {
+            $data = $data->getData(true)['data'] ?? ['test'];
+        }
         if (empty($data)) {
             return response()->json(['error' => 'No data available for export'], 200);
         }
 
-        // Format query title and construct the filename
-        $query_title = !empty($query_title) ? str_replace(' ', '_', $query_title) : 'export';
-        $filename = $query_title . "_export_" . date('YmdHis') . ".csv";
+        // Prepare filename and title
+        $query_title = $query_title ? str_replace(' ', '_', $query_title) : 'export';
+        $filename = "{$query_title}_export_" . date('YmdHis') . ".csv";
 
-        // Set response headers for CSV download
-        $headers = [
-            "Content-Type" => "text/csv",
-            "Content-Disposition" => "attachment; filename=$filename",
-        ];
+        // Extract column headers and fields once
+        $columnTitles = array_column($columns, 'title');
+        $columnFields = array_column($columns, 'field');
 
-        // Stream the CSV content to avoid memory overflows for large datasets
-        return response()->stream(function () use ($data, $columns) {
-            $handle = fopen('php://output', 'w');
+        if ($type == 1) {
+            $path = storage_path("app/exports/{$filename}");
+            is_dir(dirname($path)) || mkdir(dirname($path), 0755, true);
 
-            // Extract 'title' for CSV headers and 'field' for data mapping
-            $columnTitles = array_column($columns, 'title');
-            $columnFields = array_column($columns, 'field');
-
-            // Write column headers to the CSV
+            $handle = fopen($path, 'w');
             fputcsv($handle, $columnTitles);
 
-            // Map and write each data row based on the defined column fields
-            array_map(fn($row) => fputcsv($handle, array_map(fn($field) => $row[$field] ?? '', $columnFields)), $data);
+            foreach ($data as $row) {
+                fputcsv($handle, array_map(fn($field) => $row[$field] ?? '', $columnFields));
+            }
+
+            fclose($handle);
+
+            return [
+                'path' => $path,
+                'filename' => $filename,
+                'mime' => 'text/csv',
+            ];
+        }
+
+        // Stream to browser
+        $headers = [
+            "Content-Type" => "text/csv",
+            "Content-Disposition" => "attachment; filename={$filename}",
+        ];
+
+        return response()->stream(function () use ($data, $columnTitles, $columnFields) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, $columnTitles);
+
+            foreach ($data as $row) {
+                fputcsv($handle, array_map(fn($field) => $row[$field] ?? '', $columnFields));
+            }
 
             fclose($handle);
         }, 200, $headers);
     }
+
 
 
     /**
@@ -132,53 +149,69 @@ class ExportService
      *
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse Returns the generated Excel file as a downloadable response.
      */
-    public function exportExcel($data, $columns, $query_title)
-    {
-        return Excel::download(new class($data, $columns) implements FromCollection, WithHeadings {
-            protected $data;
-            protected $columns;
+    public function exportExcel($data, $columns, $query_title, $type = 0)
+{
+    $filename = (!empty($query_title) ? str_replace(' ', '_', $query_title) : 'export') . '_export_' . date('YmdHis') . '.xlsx';
+    $columnTitles = array_column($columns, 'title');
+    $columnFields = array_column($columns, 'field');
 
-                /**
-                 * Constructor to initialize data and columns.
-                 *
-                 * @param array $data    The dataset to be exported.
-                 * @param array $columns The column definitions (with 'field' and 'title' keys).
-                 */
-                public function __construct($data, $columns) { 
-                    $this->data = $data;
-                    $this->columns = $columns;
-                }
+    if ($type === 1) {
+        // Ensure the export directory exists
+        $exportPath = storage_path('app/exports');
+        if (!file_exists($exportPath)) {
+            mkdir($exportPath, 0755, true);
+        }
 
-                /**
-                 * Prepare and return the collection of data to be exported.
-                 *
-                 * @return \Illuminate\Support\Collection The formatted collection of data rows.
-                 */
-                public function collection() { 
-                    $columnFields = array_column($this->columns, 'field'); // Extract field names
-                    
-                    // Format data using array_map to maintain a structured output
-                    $formattedData = collect($this->data)->map(
-                        fn($row) => array_map(fn($col) => $row[$col] ?? '', $columnFields)
-                    );
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
 
-                    return collect($formattedData);
-                }
+        // Write headers
+        foreach ($columnTitles as $colIndex => $title) {
+            $sheet->setCellValueByColumnAndRow($colIndex + 1, 1, $title);
+        }
 
-                /**
-                 * Define the column headings for the Excel file.
-                 *
-                 * @return array The column headers.
-                 */
-                public function headings(): array {
-                    return array_column($this->columns, 'title'); // Extract titles as headers
-                }
+        // Write data
+        foreach ($data as $rowIndex => $row) {
+            foreach ($columnFields as $colIndex => $field) {
+                $sheet->setCellValueByColumnAndRow($colIndex + 1, $rowIndex + 2, $row[$field] ?? '');
+            }
+        }
 
-            }, !empty($query_title) 
-            ? $query_title . "_export_" . date('YmdHis') . ".xlsx" 
-            : "export_" . date('YmdHis') . ".xlsx"
-        );
+        $fullPath = $exportPath . '/' . $filename;
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save($fullPath);
+
+        return [
+            'path' => $fullPath,
+            'filename' => $filename,
+            'mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ];
     }
+
+    // Stream the file directly via HTTP response
+    return response()->stream(function () use ($data, $columnFields, $columnTitles) {
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Headers
+        foreach ($columnTitles as $colIndex => $title) {
+            $sheet->setCellValueByColumnAndRow($colIndex + 1, 1, $title);
+        }
+
+        // Data rows
+        foreach ($data as $rowIndex => $row) {
+            foreach ($columnFields as $colIndex => $field) {
+                $sheet->setCellValueByColumnAndRow($colIndex + 1, $rowIndex + 2, $row[$field] ?? '');
+            }
+        }
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save('php://output');
+    }, 200, [
+        'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition' => "attachment; filename={$filename}",
+    ]);
+}
 
     /**
     * Export data to a PDF file.
@@ -192,20 +225,38 @@ class ExportService
     *
     * @return \Illuminate\Http\Response Returns the generated PDF as a downloadable file.
     */
-    public function exportPDF($data, $columns, $query_title)
-    {
-        // Load the PDF view with data and columns
-        $pdf = Pdf::loadView('wc_querybuilder::exports.pdf', [
-            'data' => $data,
-            'columns' => $columns
-        ]);
+  public function exportPDF($data, $columns, $query_title, $type = 0)
+{
+    $filename = (!empty($query_title) ? str_replace(' ', '_', $query_title) : 'export') . '_export_' . date('YmdHis') . '.pdf';
 
-        // Generate the file name using the query title (if provided) and the current timestamp
-        $filename = !empty($query_title) 
-        ? $query_title . "_export_" . date('YmdHis') . ".pdf" 
-        : "export_" . date('YmdHis') . ".pdf";
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('wc_querybuilder::exports.pdf', [
+        'data' => $data,
+        'columns' => $columns
+    ]);
 
-        // Return the PDF as a downloadable response
-        return $pdf->download($filename);
+    if ($type === 1) {
+        $exportPath = storage_path('app/exports');
+        if (!file_exists($exportPath)) {
+            mkdir($exportPath, 0755, true);
+        }
+
+        $fullPath = $exportPath . '/' . $filename;
+        $pdf->save($fullPath);
+
+        return [
+            'path' => $fullPath,
+            'filename' => $filename,
+            'mime' => 'application/pdf',
+        ];
     }
+
+    // Stream directly to browser
+    return response()->stream(function () use ($pdf) {
+        echo $pdf->output();
+    }, 200, [
+        'Content-Type' => 'application/pdf',
+        'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+    ]);
+}
+
 }

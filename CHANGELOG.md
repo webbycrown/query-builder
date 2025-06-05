@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## **v1.2.0 (04th of June 2025)** - *Feature Enhancements*
+
+* [Feature] Language files are now automatically loaded from the package, simplifying multilingual support.
+
+* [Feature] Maintain a history of all executed queries with execution timestamps and user information for better traceability.
+
+* [Feature] Automatically generate and deliver reports via email based on configured schedules (daily, weekly, monthly).
+
+* [Feature] Support for complex condition logic using nested AND / OR groups to enhance query flexibility.
+
+* [Feature] Introduced alternate UI screens to improve workflow, navigation, and overall user experience.
+
+
 ## **v1.1.0 (31st of March 2025)** - *Feature Enhancements*
 
 * [Feature] [Feature] Support additional SQL functions, including AVG(), MIN(), MAX(), and COUNT().
@@ -34,4 +47,3 @@ All notable changes to this project will be documented in this file.
 * [Feature] Assign alias names for grouped data.
 
 * [Feature] Save, edit, delete, and execute queries dynamically.
-

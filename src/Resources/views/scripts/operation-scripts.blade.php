@@ -10,6 +10,7 @@
         let conditionOperators = @json(generateSqlOperators());
         let apply_aggregate = @json(applySqlFunctions());
         let having_operators = @json(havingOperator());
+        let conditionsAddOr = @json(conditionsAddOr());
         let availableColumns = {};
         let selectedColumns = [];
         let tableRelations = [];
@@ -26,9 +27,10 @@
         let queryDetailGroupby = queryDetails?.groupby || [];
         let queryDetailOrderby = queryDetails?.orderby || [];
         let queryDetailHaving = queryDetails?.having ? Object.values(queryDetails.having) : [];
+        let queryDetailGroupConditions = queryDetails?.groups ? Object.values(queryDetails.groups) : [];
         let setting_option_val = $('.setting_option').val();
 
-        byDefaultConditionOperator();
+        {{-- byDefaultConditionOperator(); --}}
 
         $('#mainTableSelect').val(queryDetailMainTable);
         setTimeout(function(){
@@ -170,25 +172,6 @@
             groupByCount = 0;
             orderByCount = 0;
 
-            // Populate conditions if available
-            if ( queryDetailConditions.length > 0 ) {
-                setTimeout(function(){
-                    Object.entries(queryDetailConditions).forEach(([qryConditionKey, qryCondition]) => {
-                        var qryColumn = qryCondition?.column || null;
-                        var qryOperator = qryCondition?.operator || null;
-                        var qryValue = qryCondition?.value || null;
-
-                        // Append condition HTML dynamically
-                        appendConditionHtmlContent('edit', qryColumn, qryOperator, qryValue);
-                    });
-                    queryDetailColumns = [];
-                }, 500);
-            }else{
-
-                // If no conditions exist, append a default condition input
-                appendConditionHtmlContent('edit')
-            }
-
             // Populate GROUP BY section if available
             if ( queryDetailGroupby.length > 0 ) {
                 setTimeout(function(){
@@ -205,6 +188,12 @@
             } else {
                 // If no group by exists, append a default input
                 appendGroupByHtmlContent('edit')
+            } 
+             // Populate GROUP Conditions section if available
+            if ( queryDetailGroupConditions.length > 0 ) {
+                loadGroupedConditionsFromQuery(queryDetailGroupConditions);
+            }else{
+                loadGroupedConditionsFromQuery();
             }
 
             // Populate ORDER BY section if available
@@ -344,6 +333,7 @@
             updateGroupByDropdowns(); // Refresh GroupBy dropdowns when columns change
             updateHavingDropdowns();
 
+
             $('.orderby-column').each(function () {
                 if ($(this).val() == column) {
                     $(this).parents('.orderby-card').remove();
@@ -354,6 +344,7 @@
                 appendOrderByHtmlContent();
             }
             updateOrderByDropdowns(); // Refresh OrderBy dropdowns when columns change
+            updateGroupConditionsDropdowns();
 
         });
 
@@ -369,7 +360,7 @@
             });
 
             if ( notAddJoinFlag ) {
-                toastr.error('You cannot join the add because old is not selected.');
+                toastr.error('{{ __('querybuilder::messages.error_add_join') }}');
                 return;
             }
 
@@ -474,7 +465,7 @@
 
             if ( is_disable ) {
                 join_table_this.val('');
-                toastr.error('This table is already selected. Please choose a different join.');
+                toastr.error('{{ __('querybuilder::messages.error_join_table') }}');
             } else {
                 if (table) {
                     let first_column = `${tableRelationsColumns[table]?.table_name}.${tableRelationsColumns[table]?.column_name}`;
@@ -562,6 +553,7 @@
             updateGroupByDropdowns();
             updateHavingDropdowns();
             updateOrderByDropdowns();
+            updateGroupConditionsDropdowns();
         }
 
 
@@ -579,7 +571,7 @@
             });
 
             if (notAddGroupByFlag) {
-                toastr.error('You cannot add a new Group By column because an existing one is not selected.');
+                toastr.error('{{ __('querybuilder::messages.error_groupby') }}');
                 return;
             }
 
@@ -592,67 +584,82 @@
             $(this).closest('.groupby-card').remove();
         });
 
-        // Function to append a new Group By row
-        function appendGroupByHtmlContent(type = 'normal', qryGrpColumn = null, qryGrpAggregation = null, qryGrpAlias = '') {
-            let columns = $('.groupby-column').first().html() || '';
-            let columnOptions = '<option value="">Select Column</option>';
+        // 🏷️ Returns the appropriate table label based on the current display setting (Label / Key / Both)
+        function getTableLabel(table) {
+            if (setting_option_val === 'Label') {
+                return tablesComments[table]?.table_comment || table;
+            } else if (setting_option_val === 'Key') {
+                return table;
+            } else if (setting_option_val === 'Both') {
+                return tablesComments[table]?.table_comment
+                ? `${tablesComments[table].table_comment} [${table}]`
+                : table;
+            }
+            return table;
+        }
+
+        // 🏷️ Returns the appropriate column label based on the current display setting (Label / Key / Both)
+        function getColumnLabel(column) {
+            if (setting_option_val === 'Key') {
+                return column?.name || '';
+            } else if (setting_option_val === 'Label') {
+                return column?.comment || column.name;
+            } else if (setting_option_val === 'Both') {
+                return column?.comment
+                ? `${column.comment} [${column.name}]`
+                : column.name;
+            }
+            return column?.comment || column.name;
+        }
+
+        // 🔁 Generates HTML <option> list for columns based on setting_option_val
+        function generateColumnOptionHTML(selectedColumn = '') {
+            let columnOptions = '<option value="">{{ __('querybuilder::messages.form_query_select_column') }}</option>';
+
             Object.entries(availableColumns).forEach(([table, tableInfo]) => {
-                let tableColumns = tableInfo.columns;
-                tableColumns.forEach(tableColumn => {
-                    columnOptions += `<option value="${tableColumn.full_name}" 
-                                ${tableColumn.full_name == qryGrpColumn 
-                                    ? 'selected' 
-                                    : ''
-                                    }>(
-                                        ${
-                                            setting_option_val === 'Label' 
-                                            ?( tablesComments[table]?.table_comment ? tablesComments[table]?.table_comment : table )
-                                            : setting_option_val === 'Key' 
-                                                ? table 
-                                                : setting_option_val === 'Both' 
-                                                    ? (tablesComments[table]?.table_comment  ? `${tablesComments[table]?.table_comment} [${table }]` : table )
-                                                    : table
-                                        }
-                                    ) ${
-                                        setting_option_val == 'Key' 
-                                        ? (tableColumn?.name ? tableColumn.name : '') 
-                                        : setting_option_val == 'Label' 
-                                        ? (tableColumn?.comment ? tableColumn.comment : tableColumn.name) 
-                                        : setting_option_val == 'Both' 
-                                        ? (tableColumn?.comment ? tableColumn.comment + ' [' + tableColumn.name + ']' : tableColumn.name) 
-                                        : (tableColumn?.comment ? tableColumn.comment : tableColumn.name)
-                                    }</option>`;
-                                });
+                tableInfo.columns.forEach(col => {
+                    const isSelected = col.full_name === selectedColumn ? 'selected' : '';
+                    const tableLabel = getTableLabel(table);
+                    const columnLabel = getColumnLabel(col);
+
+                    columnOptions += `<option value="${col.full_name}" ${isSelected}>(${tableLabel}) ${columnLabel}</option>`;
+                });
             });
 
-            columns = columnOptions;
+            return columnOptions;
+        }
+
+        // Function to append a new Group By row
+
+        function appendGroupByHtmlContent(type = 'normal', qryGrpColumn = null, qryGrpAggregation = null, qryGrpAlias = '') {
+            const columns = generateColumnOptionHTML(qryGrpColumn);
 
             const newRow = `
-                    <div class="groupby-card mb-2">
-                        <span class="remove-groupby" style="font-size: 25px;">&times;</span>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <select class="form-select groupby-column" name="groupby[${groupByCount}][column]">
-                                    ${columns}
-                                </select>
-                                <span class="warning-message text-danger" style="display: none;"></span>
-                            </div>
-                            <div class="col-md-4">
-                                <select class="form-select groupby-aggregation" name="groupby[${groupByCount}][aggregation]">
-                                    ${generateAggregateOptions(qryGrpAggregation)}
-                                </select>
-                                <p class="groupby-notes"></p>
-                            </div>
-                            <div class="col-md-4">
-                                <input type="text" class="form-control groupby-alias" name="groupby[${groupByCount}][alias]" placeholder="Alias Name" value="${qryGrpAlias ? qryGrpAlias : ''}">
-                                <span class="alias-message text-danger" style="display: none;"></span>
-                            </div>
-                        </div>
+            <div class="groupby-card mb-2">
+                <span class="remove-groupby" style="font-size: 25px;">&times;</span>
+                <div class="row">
+                    <div class="col-md-4">
+                        <select class="form-select groupby-column" name="groupby[${groupByCount}][column]">
+                            ${columns}
+                        </select>
+                        <span class="warning-message text-danger" style="display: none;"></span>
                     </div>
+                    <div class="col-md-4">
+                        <select class="form-select groupby-aggregation" name="groupby[${groupByCount}][aggregation]">
+                            ${generateAggregateOptions(qryGrpAggregation)}
+                        </select>
+                        <p class="groupby-notes"></p>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" class="form-control groupby-alias" name="groupby[${groupByCount}][alias]" placeholder="{{ __('querybuilder::messages.form_query_alias_placeholder')}}" value="${qryGrpAlias || ''}">
+                        <span class="alias-message text-danger" style="display: none;"></span>
+                    </div>
+                </div>
+            </div>
             `;
+
             byDefaultAggregateOptions();
             $('#groupby-container').append(newRow);
-
             groupByCount++;
         }
 
@@ -715,7 +722,7 @@
             });
 
             if (notAddOrderByFlag) {
-                toastr.error('You cannot add a new Order By column because an existing one is not selected.');
+                toastr.error('{{ __('querybuilder::messages.error_orderby') }}');
                 return;
             }
 
@@ -750,44 +757,13 @@
 
             if ( is_disable ) {
                 orderbycolumn_this.val('');
-                toastr.error('You have already selected this column. Please choose a different column for ordering.');
+                toastr.error('{{ __('querybuilder::messages.error_orderbycolumn') }}');
             }
         });
 
         // Function to append a new Order By row
         function appendOrderByHtmlContent(type = 'normal', qryOrderColumn = null, qryOrderOrder = null) {
-            let columns = $('.orderby-column').first().html() || '';
-            let columnOptions = '<option value="">Select Column</option>';
-            Object.entries(availableColumns).forEach(([table, tableInfo]) => {
-                let tableColumns = tableInfo.columns;
-                tableColumns.forEach(tableColumn => {
-                    columnOptions += `<option value="${tableColumn.full_name}" 
-                                ${tableColumn.full_name == qryOrderColumn 
-                                    ? 'selected' 
-                                    : ''
-                                    }>(
-                                        ${
-                                            setting_option_val === 'Label' 
-                                            ?( tablesComments[table]?.table_comment ? tablesComments[table]?.table_comment : table )
-                                            : setting_option_val === 'Key' 
-                                                ? table 
-                                                : setting_option_val === 'Both' 
-                                                    ? (tablesComments[table]?.table_comment  ? `${tablesComments[table]?.table_comment} [${table }]` : table )
-                                                    : table
-                                        }
-                                    ) ${
-                                        setting_option_val == 'Key' 
-                                        ? (tableColumn?.name ? tableColumn.name : '') 
-                                        : setting_option_val == 'Label' 
-                                        ? (tableColumn?.comment ? tableColumn.comment : tableColumn.name) 
-                                        : setting_option_val == 'Both' 
-                                        ? (tableColumn?.comment ? tableColumn.comment + ' [' + tableColumn.name + ']' : tableColumn.name) 
-                                        : (tableColumn?.comment ? tableColumn.comment : tableColumn.name)
-                                    }</option>`;
-                                });
-            });
-
-            columns = columnOptions;
+            const columns = generateColumnOptionHTML(qryOrderColumn);
 
             const newRow = `
                     <div class="orderby-card mb-2">
@@ -814,100 +790,6 @@
             orderByCount++;
         }
 
-        // Add condition row
-        $('#addCondition').click(function() {
-
-            let notAddConditionFlag = false;
-            $('.condition-card').each(function() {
-                let conditionColumn = $(this).find('.condition-column').val();
-                let conditionOperator = $(this).find('.condition-operator').val();
-                let conditionValue = $(this).find('.condition-value').val();
-
-                if ( 
-                    !conditionColumn || conditionColumn == '' || conditionColumn == undefined || conditionColumn == 'undefined' ||
-                    !conditionOperator || conditionOperator == '' || conditionOperator == undefined || conditionOperator == 'undefined' ||
-                    !conditionValue || conditionValue == '' || conditionValue == undefined || conditionValue == 'undefined' 
-                ) {
-                    notAddConditionFlag = true;
-                }
-            });
-
-            if ( notAddConditionFlag ) {
-                toastr.error('You cannot condition the add because old is not selected.');
-                return;
-            }
-
-            appendConditionHtmlContent();
-        });
-
-        // Remove condition row
-        $(document).on('click', '.remove-condition', function() {
-            $(this).closest('.condition-card').remove();
-        });
-
-        function appendConditionHtmlContent(type = 'normal', qryColumn = null, qryOperator = null, qryValue = '') {
-            let columns = $('.condition-column').first().html() || '';
-
-            let columnOptions = '<option value="">Select Column</option>';
-            Object.entries(availableColumns).forEach(([table, tableInfo]) => {
-                let tableColumns = tableInfo.columns;
-                tableColumns.forEach(tableColumn => {
-                    columnOptions += `<option value="${tableColumn.full_name}" 
-                                            ${tableColumn.full_name == qryColumn 
-                                                ? 'selected' 
-                                                : ''
-                                                }>(
-                                                    ${
-                                                        setting_option_val === 'Label' 
-                                                        ?( tablesComments[table]?.table_comment ? tablesComments[table]?.table_comment : table )
-                                                        : setting_option_val === 'Key' 
-                                                            ? table 
-                                                            : setting_option_val === 'Both' 
-                                                                ? (tablesComments[table]?.table_comment  ? `${tablesComments[table]?.table_comment} [${table }]` : table )
-                                                                : table
-                                                    }
-                                                ) ${
-                                                    setting_option_val == 'Key' 
-                                                    ? (tableColumn?.name ? tableColumn?.name : '') 
-                                                    : setting_option_val == 'Label' 
-                                                    ? (tableColumn?.comment ? tableColumn?.comment : tableColumn?.name) 
-                                                    : setting_option_val == 'Both' 
-                                                    ? (tableColumn?.comment ? tableColumn?.comment + ' [' + tableColumn?.name + ']' : tableColumn?.name) 
-                                                    : (tableColumn?.comment ? tableColumn?.comment : tableColumn?.name)
-                                                }</option>`;
-                                            });
-
-                 
-            });
-            columns = columnOptions;
-
-            const newRow = `
-                <div class="condition-card mb-2">
-                    <span class="remove-condition" style="font-size: 25px;">&times;</span>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <select class="form-select condition-column" name="conditions[${conditionCount}][column]">
-                                ${columns}
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <select class="form-select condition-operator" name="conditions[${conditionCount}][operator]">
-                                ${generateOperatorOptions(qryOperator)}
-                            </select>
-                            <p class="operator-notes">Select an operator to see details</p>
-                        </div>
-                        <div class="col-md-4">
-                            <input type="text" class="form-control condition-value" name="conditions[${conditionCount}][value]" placeholder="Value" value="${qryValue ? qryValue : ''}">
-                        </div>
-                    </div>
-                </div>
-            `;
-            byDefaultConditionOperator();
-
-            $('#conditions').append(newRow);
-            conditionCount++;
-        }
-
         function generateOperatorOptions(selectedOperator = '') {
             let options = '';
             for (const [key, operator] of Object.entries(conditionOperators)) {
@@ -917,201 +799,69 @@
             return options;
         }
 
-        function byDefaultConditionOperator(){
-           // Run on page load for all condition-operator selects
-            setTimeout(function(){
-                $(".condition-operator").each(function () {
-                    if (!$(this).val()) {
-                        $(this).val("="); // Set default if none is selected
+        // 🔁 Generates <option> elements for a dropdown, based on selected columns and current label settings
+        function generateColumnOptions(selected_column = '') {
+            // Default placeholder option
+            let columnOptions = '<option value="">{{ __('querybuilder::messages.form_query_select_column') }}</option>';
+
+            // Loop through all tables and their columns
+            Object.entries(availableColumns).forEach(([table, tableInfo]) => {
+                tableInfo.columns.forEach(column => {
+                    const columnValue = column.full_name;
+
+                    // Check if the column checkbox is checked (used when filtering by selected columns)
+                    const isChecked = $(`.column-select-checkbox[value="${columnValue}"]`).prop('checked');
+
+                    // Check if this column should be selected by default in the dropdown
+                    const isSelected = columnValue === selected_column ? 'selected' : '';
+
+                    // Only show checked columns if selection filter is active, otherwise show all
+                    if (selectedColumns.length === 0 || isChecked) {
+                        columnOptions += `<option value="${columnValue}" data-option_key="${columnValue}" ${isSelected}>(${getTableLabel(table)}) ${getColumnLabel(column)}</option>`;
                     }
-                    $(this).trigger("change"); // Ensure change event fires
                 });
-            }, 100);
+            });
+
+            return columnOptions;
         }
 
-        // Update on change
-        $(document).on("change", ".condition-operator", function () {
-            updateOperatorNotes(this);
-        });
-
-        function updateOperatorNotes(selectElement) {
-            let selectedOption = $(selectElement).find(":selected");
-            let notes = selectedOption.attr("data-notes") || "Equal to";
-            $(selectElement).closest(".condition-card").find(".operator-notes").text(notes);
-        }
-
+        // 🔄 Refreshes the list of available columns for all condition dropdowns
         function updateConditionDropdowns() {
-            $('.condition-column').each(function() {
-                let selected_column = $(this).val();
-                let columnOptions = '<option value="">Select Column</option>';
-
-                Object.entries(availableColumns).forEach(([table, tableInfo]) => {
-                    let columns = tableInfo.columns;
-                    columns.forEach(column => {
-                        columnOptions += `<option value="${column.full_name}" 
-                                            ${column.full_name == selected_column 
-                                                ? 'selected' 
-                                                : ''
-                                                }>(
-                                                    ${
-                                                        setting_option_val === 'Label' 
-                                                        ?( tablesComments[table]?.table_comment ? tablesComments[table]?.table_comment : table )
-                                                        : setting_option_val === 'Key' 
-                                                            ? table 
-                                                            : setting_option_val === 'Both' 
-                                                                ? (tablesComments[table]?.table_comment  ? `${tablesComments[table]?.table_comment} [${table }]` : table )
-                                                                : table
-                                                    }
-                                                ) ${
-                                                   setting_option_val == 'Key' 
-                                                   ? (column?.name ? column.name : '') 
-                                                   : setting_option_val == 'Label' 
-                                                   ? (column?.comment ? column.comment : column.name) 
-                                                   : setting_option_val == 'Both' 
-                                                   ? (column?.comment ? column.comment + ' [' + column.name + ']' : column.name) 
-                                                   : (column?.comment ? column.comment : column.name)
-                                            }</option>`;
-                    });
-                });
-                $(this).html(columnOptions);
+            $('.condition-column').each(function () {
+                // Preserve the selected column if any
+                const selected_column = $(this).val();
+                // Regenerate options
+                $(this).html(generateColumnOptions(selected_column));
             });
         }
 
+        // 🔄 Refreshes the list of available columns for all GROUP BY dropdowns
         function updateGroupByDropdowns() {
             $('.groupby-column').each(function () {
-                let selected_column = $(this).val();
-                let columnOptions = '<option value="">Select Column</option>';
-
-                Object.entries(availableColumns).forEach(([table, tableInfo]) => {
-                    let columns = tableInfo.columns;
-
-                    columns.forEach(column => {
-                        let columnValue = column.full_name;
-
-                        let tableLabel = setting_option_val === 'Label' 
-                                            ?( tablesComments[table]?.table_comment ? tablesComments[table]?.table_comment : table )
-                                            : setting_option_val === 'Key' 
-                                                ? table 
-                                                : setting_option_val === 'Both' 
-                                                    ? (tablesComments[table]?.table_comment  ? `${tablesComments[table]?.table_comment} [${table}]` : table )
-                                                    : table
-
-                        let columnLabel = setting_option_val == 'Key' 
-                                            ? (column?.name ? column.name : '') 
-                                            : setting_option_val == 'Label' 
-                                                ? (column?.comment ? column.comment : column.name) 
-                                                : setting_option_val == 'Both' 
-                                                    ? (column?.comment ? column.comment + ' [' + column.name + ']' : column.name) 
-                                                    : (column?.comment ? column.comment : column.name)
-
-                        let isChecked = $(`.column-select-checkbox[value="${columnValue}"]`).prop('checked');
-                        let isSelected = columnValue === selected_column ? 'selected' : '';
-
-                        // ✅ Only include columns that are checked
-                        if (selectedColumns.length > 0) {
-                            if (isChecked) {
-                                columnOptions += `<option value="${columnValue}" data-option_key="${columnValue}" ${isSelected}>(${tableLabel}) ${columnLabel}</option>`;
-                            }
-                        }else{
-                            columnOptions += `<option value="${columnValue}" data-option_key="${columnValue}" ${isSelected}>(${tableLabel}) ${columnLabel}</option>`;
-
-                        }
-                    });
-                });
-
-                $(this).html(columnOptions);
+                // Preserve the selected column if any
+                const selected_column = $(this).val();
+                // Regenerate options
+                $(this).html(generateColumnOptions(selected_column));
             });
         }
 
+        // 🔄 Refreshes the list of available columns for all HAVING clause dropdowns
         function updateHavingDropdowns() {
             $('.having-column').each(function () {
-                let selected_column = $(this).val();
-                let columnOptions = '<option value="">Select Column</option>';
-
-                Object.entries(availableColumns).forEach(([table, tableInfo]) => {
-                    let columns = tableInfo.columns;
-
-                    columns.forEach(column => {
-                        let columnValue = column.full_name;
-
-                        let tableLabel = setting_option_val === 'Label' 
-                                            ?( tablesComments[table]?.table_comment ? tablesComments[table]?.table_comment : table )
-                                            : setting_option_val === 'Key' 
-                                                ? table 
-                                                : setting_option_val === 'Both' 
-                                                    ? (tablesComments[table]?.table_comment  ? `${tablesComments[table]?.table_comment} [${table}]` : table )
-                                                    : table
-
-                        let columnLabel = setting_option_val == 'Key' 
-                                            ? (column?.name ? column.name : '') 
-                                            : setting_option_val == 'Label' 
-                                                ? (column?.comment ? column.comment : column.name) 
-                                                : setting_option_val == 'Both' 
-                                                    ? (column?.comment ? column.comment + ' [' + column.name + ']' : column.name) 
-                                                    : (column?.comment ? column.comment : column.name)
-
-                        let isChecked = $(`.column-select-checkbox[value="${columnValue}"]`).prop('checked');
-                        let isSelected = columnValue === selected_column ? 'selected' : '';
-
-                        // ✅ Only include columns that are checked
-                        if (selectedColumns.length > 0) {
-                            if (isChecked) {
-                                columnOptions += `<option value="${columnValue}" data-option_key="${columnValue}" ${isSelected}>(${tableLabel}) ${columnLabel}</option>`;
-                            }
-                        }else{
-                            columnOptions += `<option value="${columnValue}" data-option_key="${columnValue}" ${isSelected}>(${tableLabel}) ${columnLabel}</option>`;
-
-                        }
-                    });
-                });
-
-                $(this).html(columnOptions);
+                // Preserve the selected column if any
+                const selected_column = $(this).val();
+                // Regenerate options
+                $(this).html(generateColumnOptions(selected_column));
             });
         }
 
+        // 🔄 Refreshes the list of available columns for all ORDER BY dropdowns
         function updateOrderByDropdowns() {
             $('.orderby-column').each(function () {
-                let selected_column = $(this).val();
-                let columnOptions = '<option value="">Select Column</option>';
-
-                Object.entries(availableColumns).forEach(([table, tableInfo]) => {
-                    let columns = tableInfo.columns;
-
-                    columns.forEach(column => {
-                        let columnValue = column.full_name;
-
-                        let tableLabel = setting_option_val === 'Label' 
-                                            ?( tablesComments[table]?.table_comment ? tablesComments[table]?.table_comment : table )
-                                            : setting_option_val === 'Key' 
-                                                ? table 
-                                                : setting_option_val === 'Both' 
-                                                    ? (tablesComments[table]?.table_comment  ? `${tablesComments[table]?.table_comment} [${table}]` : table )
-                                                    : table
-
-                        let columnLabel = setting_option_val == 'Key' 
-                                            ? (column?.name ? column.name : '') 
-                                            : setting_option_val == 'Label' 
-                                                ? (column?.comment ? column.comment : column.name) 
-                                                : setting_option_val == 'Both' 
-                                                    ? (column?.comment ? column.comment + ' [' + column.name + ']' : column.name) 
-                                                    : (column?.comment ? column.comment : column.name)
-
-                        let isChecked = $(`.column-select-checkbox[value="${columnValue}"]`).prop('checked');
-                        let isSelected = columnValue === selected_column ? 'selected' : '';
-
-                        // ✅ Only include columns that are checked
-                        if (selectedColumns.length > 0) {
-                            if (isChecked) {
-                                columnOptions += `<option value="${columnValue}" data-option_key="${columnValue}" ${isSelected}>(${tableLabel}) ${columnLabel}</option>`;
-                            }
-                        }else{
-                            columnOptions += `<option value="${columnValue}" data-option_key="${columnValue}" ${isSelected}>(${tableLabel}) ${columnLabel}</option>`;
-
-                        }
-                    });
-                });
-
-                $(this).html(columnOptions);
+                // Preserve the selected column if any
+                const selected_column = $(this).val();
+                // Regenerate options
+                $(this).html(generateColumnOptions(selected_column));
             });
         }
 
@@ -1156,6 +906,257 @@
             };
         }
 
+
+        let groupIndex = 1;
+
+        // Update column dropdowns for all conditions based on selected columns
+        function updateGroupConditionsDropdowns() {
+            $('.group_conditions_column').each(function () {
+                const selected_column = $(this).val();
+                $(this).html(generateColumnOptions(selected_column));
+            });
+            byDefaultGroupConditions(); // Still call this as needed
+        }
+        // Load existing grouped conditions into the UI
+        function loadGroupedConditionsFromQuery(queryDetailGroupConditions = []) {
+            if (queryDetailGroupConditions.length > 0) {
+                setTimeout(() => {
+                    $('#groupBuilder').html(''); // Clear any previous groups
+
+                    // Iterate over each group from query data
+                    queryDetailGroupConditions.forEach((group, groupIdx) => {
+                        $('#groupBuilder').append(generateGroupHTML(groupIdx));  // Generate group wrapper
+                        $(`select[name="groups[${groupIdx}][and-or-conditions]"]`).val(group['and-or-conditions']); // Set group logic
+
+                        const container = $(`[data-group-conditions="${groupIdx}"]`);
+                        container.html(''); // Clear default condition
+
+                        // Add each condition inside the group
+                        group.group_conditions?.forEach((condition, condIdx) => {
+                            const html = generateConditionHTML(groupIdx, condIdx, 'normal', condition?.column, condition?.operator, condition?.value, condition?.conditions);
+                            container.append(html); 
+                        });
+                    });
+
+                    groupIndex = queryDetailGroupConditions.length; // Update global index
+                }, 300);
+            } else {
+                generateGroupHTML(0); // Create default group if none present
+            }
+        }
+
+        
+
+        // Generate HTML for a single condition row
+        function generateConditionHTML(groupId = 0, index = 1, type = 'normal', qryColumn = null, qryOperator = null, qryValue = '', conditions = null) {
+            const columns = generateColumnOptionHTML(qryColumn);
+
+            return `
+                <div class="condition mb-2">
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                        <select class="form-select group_conditions_column" name="groups[${groupId}][group_conditions][${index}][column]">
+                                ${columns}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select group_conditions"
+                                name="groups[${groupId}][group_conditions][${index}][operator]">
+                               ${generateOperatorOptions(qryOperator)}
+                            </select>
+                            <p class="operator-notes">Select an operator to see details</p>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" class="form-control"
+                                name="groups[${groupId}][group_conditions][${index}][value]"
+                                placeholder="Value" value="${qryValue || ''}">
+                        </div> 
+                        <div class="col-md-1">
+                            <select class="form-select w-auto" name="groups[${groupId}][group_conditions][${index}][conditions]">
+                                ${ConditionsAddOr(conditions)}
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <span class="remove-group-conditions" style="font-size: 25px;">&times;</span>
+                        </div>
+                    </div>
+                </div>`;
+
+        }
+
+            // Generate HTML for a group wrapper
+        function generateGroupHTML(groupId) {
+            return `
+                <div class="group-container">
+                    <div class="group-card mb-2">
+                        <div class="condition-group mb-4" data-group="${groupId}">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label><strong>Group Logic:</strong></label>
+                                <select class="form-select w-auto group-conditions" name="groups[${groupId}][and-or-conditions]">
+                                   ${ConditionsAddOr()}
+                                </select>
+                                <span class="remove-group" style="font-size: 25px;">&times;</span>
+                            </div>
+
+                            <div class="nested-group" data-group-conditions="${groupId}">
+                                ${generateConditionHTML(groupId, 0)}
+                            </div>
+
+                            <button type="button" class="btn btn-secondary btn-sm mt-2 add-condition" data-group="${groupId}">
+                                + Add Condition
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        // Validate that all required condition fields in a group are filled
+        function isGroupValid(groupEl) {
+            let isValid = true;
+
+            const groupLogicSelect = $(groupEl).find('select[name$="[and-or-conditions]"]');
+            const groupLogicValue = groupLogicSelect.val();
+
+            if (!groupLogicValue || groupLogicValue === '' || groupLogicValue === 'undefined') {
+                isValid = false;
+                groupLogicSelect.addClass('border border-danger');
+            } else {
+                groupLogicSelect.removeClass('border border-danger');
+            }
+
+            $(groupEl).find('.condition').each(function () {
+                const column = $(this).find('select[name$="[column]"]').val();
+                const operator = $(this).find('select[name$="[operator]"]').val();
+                const value = $(this).find('input[name$="[value]"]').val();
+                const conditions = $(this).find('select[name$="[conditions]"]').val();
+
+                if (!column || !operator || !value || !conditions ||
+                    column === 'undefined' || operator === 'undefined' || value === 'undefined' || conditions === 'undefined') {
+                    isValid = false;
+                $(this).addClass('border border-danger p-2 rounded');
+            } else {
+                $(this).removeClass('border border-danger p-2 rounded');
+            }
+        });
+
+            return isValid;
+        }
+
+
+        /**
+        * Set default operator and trigger change for operator notes.
+        */
+        function byDefaultGroupConditions(){
+               // Run on page load for all gorup condition selects
+            setTimeout(function(){
+                $(".group_conditions").each(function () {
+                    if (!$(this).val()) {
+                        // Set default if none is selected
+                        $(this).val("="); 
+                    }
+                    // Ensure change event fires
+                    $(this).trigger("change"); 
+                });
+            }, 100);
+        }
+
+        /**
+        * Show operator notes on dropdown change.
+        */
+        $(document).on("change", ".group_conditions", function () {
+            updateGroupConditionsNotes(this);
+        });
+
+        /**
+        * Display selected operator note beside dropdown.
+        */
+        function updateGroupConditionsNotes(selectElement) {
+            let selectedOption = $(selectElement).find(":selected");
+            let notes = selectedOption.attr("data-notes") || "Equal to";
+            $(selectElement).closest(".condition").find(".operator-notes").text(notes);
+        }
+
+        /**
+        * Generate AND/OR options.
+        */
+        function ConditionsAddOr(selectedConditions = '') {
+            let options = '';
+            for (const [key, operator] of Object.entries(conditionsAddOr)) {
+                const selected = (selectedConditions === operator.value) ? 'selected' : '';
+                options += `<option value="${operator.value}"  ${selected}>${operator.key}</option>`;
+            }
+            return options;
+        }
+
+
+        /** ---------------------------------------
+        *  Event Handlers for Dynamic UI
+        * --------------------------------------*/
+
+        // Add first group button click
+        $('#addMainGroup').on('click', function () {
+            const lastGroup = $('.condition-group').last();
+
+            if (lastGroup.length && !isGroupValid(lastGroup)) {
+                toastr.error('{{ __('querybuilder::messages.error_add_group_condition') }}');
+                return;
+            }
+            const groupId = `${groupIndex++}`;
+            $('#groupBuilder').append(generateGroupHTML(groupId));
+            updateGroupConditionsDropdowns();
+            byDefaultGroupConditions();
+        });
+
+
+        // Add condition button in a group
+        $(document).on('click', '.add-condition', function () {
+            const groupId = $(this).data('group');
+            const groupEl = $(`.condition-group[data-group="${groupId}"]`);
+            if ( !isGroupValid(groupEl)) {
+                toastr.error('{{ __('querybuilder::messages.error_add_one_condition') }}');
+                return;
+            }
+
+            updateGroupConditionsDropdowns();
+            const container = $(`[data-group-conditions="${groupId}"]`);
+            const conditionCount = container.find('.condition').length;
+            container.append(generateConditionHTML(groupId, conditionCount));
+            updateGroupConditionsDropdowns();
+        });
+
+        // Remove entire group
+        $(document).on('click', '.remove-group', function () {
+            $(this).closest('.group-container').remove();
+        });
+
+        // Remove single condition row
+        $(document).on('click', '.remove-group-conditions', function () {
+            $(this).closest('.condition').remove();
+        });
+
+        // Auto add new group on group logic change if last one
+        $(document).on('change', '.group-conditions', function () {
+            const parentGroup = $(this).closest('.group-container');
+            const nextGroupExists = parentGroup.next('.group-container').length > 0;
+             const groupEl = parentGroup.find('.condition-group');
+
+            if ( !isGroupValid(groupEl)) {
+                toastr.error('{{ __('querybuilder::messages.error_group_conditions') }}');
+                return;
+            }
+
+            if (!nextGroupExists) {
+                const groupId = `${groupIndex++}`;
+                $('#groupBuilder').append(generateGroupHTML(groupId));
+            }
+        });
+
+        $(document).on('change keyup', '.group-container select, .group-container input', function () {
+            $(this).removeClass('border border-danger');
+            $(this).closest('.condition').removeClass('border border-danger p-2 rounded');
+        });
+
+
         // Form submission
         $('#queryForm').submit(function(e) {
             e.preventDefault();
@@ -1164,7 +1165,7 @@
 
             var main_table = $('#mainTableSelect').val()
             if ( !main_table || main_table == '' || main_table == undefined || main_table == 'undefined' ) {
-                toastr.error('Query details have not been selected.');
+                toastr.error('{{ __('querybuilder::messages.error_main_table_select') }}');
                 return;
             }
 
@@ -1235,7 +1236,7 @@
 
             var queryReportTitle = $('#queryReportTitle').val()
             if ( !queryReportTitle || queryReportTitle == '' || queryReportTitle == undefined || queryReportTitle == 'undefined' ) {
-                toastr.error('Query title has not been entered.');
+                toastr.error('{{ __('querybuilder::messages.error_query_report_title') }}');
                 return;
             }
             
@@ -1252,7 +1253,7 @@
             });
 
             if ( !main_table || main_table == '' || main_table == undefined || main_table == 'undefined' ) {
-                toastr.error('Query details have not been selected.');
+                toastr.error('{{ __('querybuilder::messages.error_main_table') }}');
             } else {
 
                 var formData = new FormData(this);

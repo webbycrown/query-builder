@@ -13,18 +13,18 @@
 
                     <div class="d-flex justify-content-between">
                         <input type="hidden" name="id" id="id" value="{{$query_form?->id ?? 0 }}">
-                        <h2>{{ $query_form->title ?? 'View Query'}}</h2>
+                        <h2>{{ $query_form->title ?? __('querybuilder::messages.view_query') }}</h2>
                         <div>
-                            <a href="{{ route( 'queries.index' ) }}" class="btn btn-secondary">Back</a>
-                            <a href="{{ route( 'queries.edit', ['id' => ( (int)$query_form?->id ?? 0 )] ) }}" class="btn btn-primary">Edit</a>
+                            <a href="{{ route( 'queries.index' ) }}" class="btn btn-secondary">{{ __('querybuilder::messages.back_button') }}</a>
+                            <a href="{{ route( 'queries.edit', ['id' => ( (int)$query_form?->id ?? 0 )] ) }}" class="btn btn-primary">{{ __('querybuilder::messages.edit_button') }}</a>
                         <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-                            Export Options
+                           {{ __('querybuilder::messages.query_export_options') }}
                         </button>
                         <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                            <a class="dropdown-item export_csv  "data-format="csv">CSV</a>
-                            <a class="dropdown-item export_xlsx "data-format="xlsx">XLSX</a>
-                            <a class="dropdown-item export_pdf "data-format="pdf">PDF</a>
-                            <a class="dropdown-item export_btn "data-format="json">JSON</a>
+                            <a class="dropdown-item export_csv  "data-format="csv">{{ __('querybuilder::messages.query_export_csv') }}</a>
+                            <a class="dropdown-item export_xlsx "data-format="xlsx">{{ __('querybuilder::messages.query_export_xlsx') }}</a>
+                            <a class="dropdown-item export_pdf "data-format="pdf">{{ __('querybuilder::messages.query_export_pdf') }}</a>
+                            <a class="dropdown-item export_btn "data-format="json">{{ __('querybuilder::messages.query_export_json') }}</a>
                         </div>
                         </div>
                     </div>

@@ -1,0 +1,198 @@
+<?php 
+
+return [
+
+    'welcome' => 'Welcome to our application!',
+    'query_save_success' => 'The query details were successfully saved.',
+    'query_save_error' => 'Failed to save the query details.',
+    'query_delete_success' => 'The query report was successfully deleted.', 
+    'query_delete_error_not_found' => 'The query report was not found.', 
+    'query_delete_error_failed' => 'Failed to delete the query report.',
+    'export_invalid_format' => 'Invalid export format',
+    'export_no_data' => 'No data available for export',
+    'unexpected_error' => 'Unexpected error',
+    'invalid_table_name' => 'Invalid table name',
+    'error' => 'Something went wrong',
+
+    'query_builder_title' => 'Query Builder - Manage Database',
+    'query_lists' => 'Query Lists',
+    'add_query' => 'Add Query',
+    'edit_query' => 'Edit Query',
+    'view_query' => 'View Query',
+
+    'table_id' => 'ID',
+    'table_title' => 'Title',
+    'table_actions' => 'Actions',
+    
+    // Buttons
+    'back_button' => 'Back',
+    'edit_button' => 'Edit',
+    'save_query_button' => 'Save Query',
+    'update_query_button' => 'Update Query',
+    'form_query_add_condition_button' => 'Add Condition',
+    'form_query_add_join_button' => 'Add Join',
+    'form_query_add_group_by_button' => 'Add Group By',
+    'form_query_add_order_by_button' => 'Add Order By',
+    
+    // Form fields
+    'form_query_title' => 'Query Title',
+    'form_query_title_title' => 'Title',
+    'form_query_details' => 'Query Details',
+    'form_query_available_relationships' => 'Available Relationships',
+    'form_query_table_joins' => 'Table Joins',
+    'form_query_select_columns' => 'Select Columns',
+    'form_query_conditions' => 'Conditions',
+    'form_query_group_by' => 'Group By',
+    'form_query_having' => 'Having',
+    'form_query_order_by' => 'Order By',
+    'form_query_limit' => 'Limit',
+    'form_query_offset' => 'Offset',
+    'form_query_group_logic' => 'Group Logic',
+    'form_query_enter_title' => 'Enter Title',
+    'form_query_select_main_table' => 'Select Main Table',
+    'form_query_select_a_table' => 'Select a table',
+    'form_query_select_column' => 'Select Column',
+    'form_query_operator_notes' => 'Select an operator to see details',
+    'form_query_search_button' => 'Search',
+    'form_query_value_placeholder' => 'Value',
+    'form_query_alias_placeholder' => 'Alias Name',
+
+    'query_export_options' => 'Export Options',
+    'query_export_csv' => 'CSV',
+    'query_export_xlsx' => 'XLSX',
+    'query_export_pdf' => 'PDF',
+    'query_export_json' => 'JSON',
+
+    'error_add_one_condition' => 'Please complete the previous condition before adding another.',
+    'error_add_group_condition' => 'Please complete all fields in the previous group before adding a new one.',
+    'error_add_join' => 'You cannot join the add because old is not selected.',
+    'error_join_table' => 'This table is already selected. Please choose a different join.',
+    'error_groupby' => 'You cannot add a new Group By column because an existing one is not selected.',
+    'error_orderby' => 'You cannot add a new Order By column because an existing one is not selected.',
+    'error_orderbycolumn' => 'You have already selected this column. Please choose a different column for ordering.',
+    'error_add_condition' => 'You cannot condition the add because old is not selected.',
+    'error_group_conditions' => 'Please complete the previous condition before adding another.',
+    'error_main_table_select' => 'Query details have not been selected.',
+    'error_query_report_title' => 'Query title has not been entered.',
+    'error_main_table' => 'Query details have not been selected.',
+    'delete_confirm_message' => 'Are you sure you want to delete this record?',
+    'error_download_failed' => 'Download failed!',
+
+    'export_page_title' => 'Exported Data',
+    'export_page_heading' => 'Exported Data',
+
+    //log_lists
+
+    'log_lists' => 'Log Lists',
+    'table_log_id' => 'ID',
+    'table_log_user_id' => 'User ID',
+    'table_log_ip_address' => 'IP Address',
+    'table_log_user_agent' => 'User Agent',
+    'table_log_action' => 'Action',
+    'table_log_model' => 'Model',
+    'table_log_model_id' => 'Model ID',
+    'table_log_old_values' => 'Old Values',
+    'table_log_new_values' => 'New Values',
+    'table_log_values' => 'Values',
+    'table_log_created_at' => 'Date',
+    'log_popup_title' => 'JSON View',
+    'close_btn' => 'Close',
+
+    //end log_lists
+
+    //Scheduled Report
+    'scheduled_report'           => 'Scheduled Report',
+    'scheduled_report_list'      => 'Scheduled Report List',
+    'scheduled_report_add'       => 'Add Scheduled Report',
+    'save_schedule'              => 'Save Schedule',
+    'update_schedule'            => 'Update Schedule',
+
+    'report_type'                => 'Report Type',
+    'query_lists'                => 'Query Lists',
+    'log_btn'                    => 'Log View',
+    'report_btn'                 => 'Scheduled Report View',
+
+    'frequency'                  => 'Frequency',
+    'daily'                      => 'Daily',
+    'weekly'                     => 'Weekly (Monday)',
+    'monthly'                    => 'Monthly (1st)',
+    'delivery_time'              => 'Delivery Time',
+
+    'to_email'                   => 'To Email',
+    'cc_email_optional'          => 'CC (Optional)',
+    'bcc_email_optional'         => 'BCC (Optional)',
+
+    'email_subject'              => 'Email Subject',
+    'default_subject_placeholder'=> 'Monthly Report Summary',
+
+    'file_format'                => 'File Format',
+    'record_limit'               => 'Record Limit',
+    
+    'email_body'                 => 'Email Body',
+    'default_body_placeholder'   => 'Please find the attached report.',
+
+    'active'                     => 'Active',
+
+    'table_report_type'    => 'Report Type',
+    'table_frequency'      => 'Frequency',
+    'table_schedule' => 'Schedule',
+    'table_time'           => 'Time',
+    'table_to_email'       => 'To Email',
+    'table_cc_email'       => 'CC Email',
+    'table_bcc_email'      => 'BCC Email',
+    'table_actions'        => 'Actions',
+
+    'scheduled_report_success' => 'Scheduled Report Successfully!',
+    'scheduled_report_delete_success' => 'The scheduled report was successfully deleted.', 
+    'scheduled_report_delete_error_not_found' => 'The scheduled report was not found.', 
+    'scheduled_report_delete_error_failed' => 'Failed to delete the scheduled report.',
+
+    //end Scheduled Report
+
+    'csv' => 'CSV',
+    'xlsx' => 'XLSX',
+    'pdf' => 'PDF',
+    'json' => 'JSON',
+
+    "=" => "Find customers whose country is 'USA'.",
+    "<" => "Find products priced below 50.",
+    ">" => "Find employees older than 30.",
+    "<=" => "Find orders with a quantity of 5 or less.",
+    ">=" => "Find students with grades 90 or above.",
+    "!=" => "Find customers who are NOT from 'USA'.",
+    "LIKE" => "Find customers whose name starts with 'A'.",
+    "LIKE%%" => "Find customers whose name contains 'John'.",
+    "REGEXP" => "Find emails ending in .com or .net.",
+    "IN" => "Find employees in departments 1, 2, or 3.",
+    "FIND_IN_SET" => "Find users with role 'admin' in a comma-separated list.",
+    "IS NULL" => "Find customers who haven't provided an email.",
+    "NOT LIKE" => "Find customers whose name does NOT start with 'A'.",
+    "NOT REGEXP" => "Find emails that do NOT end in .com or .net.",
+    "NOT IN" => "Find employees NOT in departments 1, 2, or 3.",
+    "IS NOT NULL" => "Find customers who have an email address.",
+    "BETWEEN" => "Find products priced between 50 and 100 (Enter values as: 50,100).",
+    "SQL" => "Depends on implementation, used for advanced filtering",
+
+
+    "functions" => [
+        "CHAR_LENGTH" => "This tells you how many letters or characters are in a word or phrase. For example, the word 'hello' has 5 letters.",
+        "DATE" => "This only shows the date from a full date and time. For example, if you have '2024-03-21 15:30:00', it will show just '2024-03-21'.",
+        "FROM_UNIXTIME" => "This takes a number (like '1234567890') and converts it into a readable date and time, like '2009-02-13 23:31:30'.",
+        "LOWER" => "This turns everything in a word to lowercase. For example, 'HELLO' would become 'hello'.",
+        "ROUND" => "This rounds a number to a certain number of decimal places. For example, rounding 3.14159 to 2 decimals will give you 3.14.",
+        "FLOOR" => "This rounds a number **down** to the nearest whole number. For example, 3.9 would become 3.",
+        "CEIL" => "This rounds a number **up** to the nearest whole number. For example, 3.1 would become 4.",
+        "SEC_TO_TIME" => "This converts a number of seconds into a time format (hours:minutes:seconds). For example, 3661 seconds becomes '01:01:01'.",
+        "TIME_TO_SEC" => "This takes a time in hours, minutes, and seconds, and converts it into total seconds. For example, '01:01:01' becomes 3661 seconds.",
+        "UPPER" => "This turns everything in a word to uppercase. For example, 'hello' would become 'HELLO'.",
+    ],
+    "aggregation" => [
+        "AVG" => "This calculates the average of a set of numbers. For example, the average of 2, 4, and 6 is 4.",
+        "COUNT" => "This counts how many items are in a list. For example, if you have 3 items, COUNT will give you 3.",
+        "COUNT DISTINCT" => "This counts how many **unique** items are in a list. For example, if you have 1, 1, and 2, COUNT DISTINCT will give you 2.",
+        "GROUP_CONCAT" => "This combines values into one long list. For example, combining 'John', 'Alice', and 'Bob' into one string: 'John,Alice,Bob'.",
+        "MAX" => "This finds the largest number in a set. For example, if you have 3, 7, and 1, the MAX number is 7.",
+        "MIN" => "This finds the smallest number in a set. For example, if you have 3, 7, and 1, the MIN number is 1.",
+        "SUM" => "This adds up all the numbers in a list. For example, adding 1, 2, and 3 gives you 6.",
+    ],
+];

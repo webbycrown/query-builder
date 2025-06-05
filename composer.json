@@ -9,8 +9,8 @@
         }
     ],
     "require": {
-        "maatwebsite/excel": "^3.1",
-        "barryvdh/laravel-dompdf": "^2.0"
+        "maatwebsite/excel": "*",
+        "barryvdh/laravel-dompdf": "*"
     },
     "autoload": {
         "psr-4": {

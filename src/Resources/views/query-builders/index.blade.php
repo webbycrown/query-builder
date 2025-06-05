@@ -6,20 +6,26 @@
 <div class="container">
     <div class="row">
         <div class="col-12">
-
+            
             <div class="d-flex justify-content-between">
-                <h2>Query Lists</h2>
+                <h2>{{__('querybuilder::messages.query_lists')}}</h2>
                 <div>
-                    <a href="{{ route( 'queries.add' ) }}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Query</a>
+                    <?php
+                    $log_page_view =  config('querybuilder.log_page_view', false);
+                    $reports_page_view =  config('querybuilder.reports_page_view', false);
+                    ?>
+                   @if( $reports_page_view ) <a href="{{ route( 'queries.reports.index' ) }}" class="btn btn-primary">{{__('querybuilder::messages.report_btn')}}</a>@endif
+                   @if( $log_page_view ) <a href="{{ route( 'queries.log.index' ) }}" class="btn btn-primary">{{__('querybuilder::messages.log_btn')}}</a>@endif
+                    <a href="{{ route( 'queries.add' ) }}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> {{__('querybuilder::messages.add_query')}}</a>
                 </div>
             </div>
 
             <table id="reportsTable" class="table table-striped table-bordered">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Title</th>
-                        <th>Actions</th>
+                        <th>{{ __('querybuilder::messages.table_id') }}</th>
+                        <th>{{ __('querybuilder::messages.table_title') }}</th>
+                        <th>{{ __('querybuilder::messages.table_actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -128,7 +134,7 @@
 
             toastr.clear();
 
-            if ( confirm('Are you sure you want to delete this record?') ) {
+            if ( confirm('{{ __('querybuilder::messages.delete_confirm_message') }}') ) {
 
                 $.ajax({
                     url: `{{route('api.queries.delete')}}`,
@@ -202,7 +208,7 @@
                 },
                 error: function (xhr) {
                      // Handle error response and log an error message
-                    let errorMsg = xhr.responseJSON ? xhr.responseJSON.error : "Download failed!";
+                    let errorMsg = xhr.responseJSON ? xhr.responseJSON.error : "{{ __('querybuilder::messages.error_download_failed') }}";
                     console.log(errorMsg);
                 }
             });
@@ -265,7 +271,7 @@
                     window.URL.revokeObjectURL(url);
                 },
                 error: function (xhr, textStatus, errorThrown) {
-                    console.error("Download failed!", xhr.responseText || textStatus);
+                    console.error("{{ __('querybuilder::messages.error_download_failed') }}", xhr.responseText || textStatus);
                 }
             });
         });

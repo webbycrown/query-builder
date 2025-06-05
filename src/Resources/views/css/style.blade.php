@@ -37,6 +37,7 @@
         color: #dc3545;
     }
     .groupby-card,
+    .group-card,
     .orderby-card {
         border: 1px solid #dee2e6;
         padding: 15px;
@@ -45,6 +46,8 @@
         background-color: #f8f9fa;
     }
     .remove-groupby,
+    .remove-group,
+    .remove-group-conditions,
     .remove-orderby {
         float: right;
         cursor: pointer;

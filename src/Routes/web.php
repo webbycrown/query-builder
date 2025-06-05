@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use Webbycrown\QueryBuilder\Http\Controllers\QueryBuilderController;
+use Webbycrown\QueryBuilder\Http\Controllers\AuditLogController;
+use Webbycrown\QueryBuilder\Http\Controllers\GenerateScheduledReportsConroller;
 
 
 $prefix = config('querybuilder.access_route', 'queries'); // Default to 'queries'
@@ -88,6 +90,47 @@ Route::middleware($middleware)->group(function () use ($prefix) {
          * Delete a specific saved query.
          */
         Route::post('/delete', 'delete')->name('api.queries.delete');
+
+    });
+
+    /**
+     * log Routes
+     * 
+     * These routes provide a user interface for building and managing database queries.
+     * They are prefixed with 'queries' to logically group related functionalities.
+     */
+    Route::controller(AuditLogController::class)->prefix($prefix.'/log')->group(function () {
+
+        /**
+         * Display the list of saved queries.
+         */
+        Route::get('/', 'index')->name('queries.log.index');
+
+    });
+
+
+    /**
+     * Scheduled Report Routes
+     * 
+     * These routes provide a user interface for building and managing database queries.
+     * They are prefixed with 'queries' to logically group related functionalities.
+     */
+    Route::controller(GenerateScheduledReportsConroller::class)->prefix($prefix.'/reports')->group(function () {
+
+        // List all scheduled reports
+        Route::get('/', 'index')->name('queries.reports.index');
+
+        // Show form to create a new scheduled report
+        Route::get('/add', 'add')->name('queries.reports.add');
+
+        // Show form to edit an existing scheduled report
+        Route::get('/edit/{id}', 'edit')->name('queries.reports.edit');
+
+        // Delete a scheduled report (via POST request)
+        Route::post('/delete', 'delete')->name('queries.reports.delete');
+
+        // Save a new or updated scheduled report (via AJAX or form post)
+        Route::post('/save', 'storeScheduledReport')->name('api.reports.save');
 
     });
 

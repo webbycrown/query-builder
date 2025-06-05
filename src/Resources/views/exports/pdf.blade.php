@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Exported Data</title>
+    <title>{{ __('querybuilder::messages.export_page_title') }}</title>
     <style>
         table {
             width: 100%;
@@ -21,7 +21,7 @@
 </head>
 <body>
 
-    <h2>Exported Data</h2>
+    <h2>{{ __('querybuilder::messages.export_page_heading') }}</h2>
 
     <table>
         <thead>
