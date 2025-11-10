@@ -208,15 +208,14 @@ The Query Builder Package is continuously evolving to provide more flexibility a
 
 1. **Subquery Support** – Allow users to create nested queries within the main query.
 
----
-
-<div align="center">
-  <strong>Made with ❤️ by <a href="https://webbycrown.com">WebbyCrown</a></strong>
-</div>
-
-
 ### Contributor Suggestions
 We welcome community contributions! If you have ideas for new features or improvements, feel free to submit a pull request or open an issue on our repository.The Query Builder Package is continuously evolving to provide more flexibility and ease of use. Here are some planned features for future updates:
 
 ## License
 This package is open-source and licensed under the MIT License.
+
+---
+
+<div align="center">
+  <strong>Made with ❤️ by <a href="https://webbycrown.com">WebbyCrown</a></strong>
+</div>
