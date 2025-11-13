@@ -216,6 +216,33 @@ This package is open-source and licensed under the MIT License.
 
 ---
 
+## 📊 Changelog
+
+### v1.0.1
+
+- 🔄 Updated package stability from **dev** to **stable** for production readiness
+- 📦 Added explicit version declaration in `composer.json` for better version tracking
+- 📝 Improved installation documentation with simplified composer command
+- ✅ Resolved Bagisto marketplace feedback and code review recommendations
+- 🚀 Published stable release to [Packagist](https://packagist.org/packages/webbycrown/query-builder)
+
+---
+
+### v1.0.0
+
+- ✨ Initial release of **Laravel Query Builder Package**
+- 🔍 Dynamic query builder with intuitive interface for developers and non-technical users
+- 🔗 Support for left join tables with relationship configuration
+- 📊 Column selection with custom conditions using multiple operators
+- 📈 Group By functionality with aggregation functions (SUM, GROUP_CONCAT, etc.)
+- 💾 Save, edit, delete, and execute queries dynamically
+- ⚙️ Configurable middleware, route prefix, and database connections
+- 🌐 Multi-language support with auto-loaded translation files
+- 📄 Export capabilities for query results in multiple formats
+- 🚀 Published to [Packagist](https://packagist.org/packages/webbycrown/query-builder)
+
+---
+
 <div align="center">
   <strong>Made with ❤️ by <a href="https://webbycrown.com">WebbyCrown</a></strong>
 </div>
