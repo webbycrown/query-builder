@@ -1,6 +1,7 @@
 {
     "name": "webbycrown/query-builder",
     "license": "MIT",
+    "version": "1.0.1",
     "description" : "Query Builder for Laravel",
     "authors": [
         {
@@ -25,5 +26,5 @@
             "aliases": {}
         }
     },
-    "minimum-stability": "dev"
+    "minimum-stability": "stable"
 }

@@ -52,7 +52,7 @@ The **Laravel Query Builder Package** was created to provide developers with a s
 
 ## Installation
 ```bash
-composer require webbycrown/query-builder:dev-main
+composer require webbycrown/query-builder
 ```
 ## Configuration
 ### 1. Publish Config File
